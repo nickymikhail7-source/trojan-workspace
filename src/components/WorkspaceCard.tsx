@@ -14,6 +14,7 @@ interface WorkspaceCardProps {
   workspace: Workspace;
   className?: string;
   variant?: "default" | "compact";
+  onClick?: () => void;
 }
 
 const tagColors: Record<string, string> = {
@@ -25,7 +26,7 @@ const tagColors: Record<string, string> = {
   Planning: "bg-sky-50 text-sky-700 border-sky-200",
 };
 
-export function WorkspaceCard({ workspace, className, variant = "default" }: WorkspaceCardProps) {
+export function WorkspaceCard({ workspace, className, variant = "default", onClick }: WorkspaceCardProps) {
   const [showActions, setShowActions] = useState(false);
 
   return (
@@ -35,6 +36,7 @@ export function WorkspaceCard({ workspace, className, variant = "default" }: Wor
         variant === "compact" ? "min-w-[240px] max-w-[280px]" : "",
         className
       )}
+      onClick={onClick}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
@@ -45,13 +47,22 @@ export function WorkspaceCard({ workspace, className, variant = "default" }: Wor
           showActions ? "opacity-100" : "opacity-0"
         )}
       >
-        <button className="h-7 w-7 rounded-md bg-secondary hover:bg-muted flex items-center justify-center transition-colors duration-150">
+        <button 
+          onClick={(e) => { e.stopPropagation(); console.log('Open', workspace.id); }}
+          className="h-7 w-7 rounded-md bg-secondary hover:bg-muted flex items-center justify-center transition-colors duration-150"
+        >
           <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
-        <button className="h-7 w-7 rounded-md bg-secondary hover:bg-muted flex items-center justify-center transition-colors duration-150">
+        <button 
+          onClick={(e) => { e.stopPropagation(); console.log('Duplicate', workspace.id); }}
+          className="h-7 w-7 rounded-md bg-secondary hover:bg-muted flex items-center justify-center transition-colors duration-150"
+        >
           <Copy className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
-        <button className="h-7 w-7 rounded-md bg-secondary hover:bg-muted flex items-center justify-center transition-colors duration-150">
+        <button 
+          onClick={(e) => { e.stopPropagation(); console.log('Share', workspace.id); }}
+          className="h-7 w-7 rounded-md bg-secondary hover:bg-muted flex items-center justify-center transition-colors duration-150"
+        >
           <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
