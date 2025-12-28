@@ -123,6 +123,13 @@ export default function Index() {
     });
   };
 
+  const handleWorkspaceClick = (workspace: Workspace) => {
+    toast({
+      title: `Opening "${workspace.title}"`,
+      description: "Workspace view coming soon.",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <TopBar onNewWorkspace={() => setIsModalOpen(true)} />
@@ -154,7 +161,11 @@ export default function Index() {
                     className="animate-slide-in-left"
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <WorkspaceCard workspace={workspace} variant="compact" />
+                    <WorkspaceCard 
+                      workspace={workspace} 
+                      variant="compact" 
+                      onClick={() => handleWorkspaceClick(workspace)}
+                    />
                   </div>
                 ))}
               </div>
@@ -176,7 +187,7 @@ export default function Index() {
                     className="animate-fade-up"
                     style={{ animationDelay: `${(index + 1) * 50}ms` }}
                   >
-                    <WorkspaceCard workspace={workspace} />
+                    <WorkspaceCard workspace={workspace} onClick={() => handleWorkspaceClick(workspace)} />
                   </div>
                 ))}
               </div>
