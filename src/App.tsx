@@ -10,6 +10,7 @@ import Library from "./pages/Library";
 import Settings from "./pages/Settings";
 import Activity from "./pages/Activity";
 import WorkspaceInterior from "./pages/WorkspaceInterior";
+import BranchView from "./pages/BranchView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,7 +29,7 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/activity" element={<Activity />} />
           <Route path="/workspace/:id" element={<WorkspaceInterior />} />
-          <Route path="/workspace/:id/branch/:branchId" element={<WorkspaceInterior />} />
+          <Route path="/workspace/:id/branch/:branchId" element={<BranchView />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
