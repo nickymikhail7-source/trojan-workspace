@@ -28,6 +28,7 @@ const App = () => (
           <Route path="/settings" element={<Settings />} />
           <Route path="/activity" element={<Activity />} />
           <Route path="/workspace/:id" element={<WorkspaceInterior />} />
+          <Route path="/workspace/:id/branch/:branchId" element={<WorkspaceInterior />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

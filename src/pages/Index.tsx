@@ -125,10 +125,12 @@ export default function Index() {
 
   const handleCreateWorkspace = (type: string) => {
     setIsModalOpen(false);
+    const newId = `new-${Date.now()}`;
     toast({
       title: "Workspace created",
       description: `Your new ${type} workspace is ready.`,
     });
+    navigate(`/workspace/${newId}?type=${type}`);
   };
 
   const handleWorkspaceClick = (workspace: Workspace) => {

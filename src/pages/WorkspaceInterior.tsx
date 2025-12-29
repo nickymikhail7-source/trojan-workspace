@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, GitBranch, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, GitBranch, Plus, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { TopBar } from "@/components/TopBar";
 import { LeftRail } from "@/components/LeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
@@ -14,27 +15,42 @@ interface Branch {
   createdAt: string;
 }
 
-const sampleBranches: Branch[] = [
-  { id: "1", title: "Trojan bb", createdAt: "28/12/2025" },
-];
-
-// Sample workspace names
-const workspaceNames: Record<string, string> = {
-  "1": "Trojan V1",
+// Sample workspace names for existing workspaces
+const existingWorkspaceNames: Record<string, string> = {
+  "1": "Q1 Product Strategy",
   "2": "Series A Pitch Deck",
   "3": "API Architecture Review",
+  "4": "User Research: Onboarding",
+  "5": "Competitor Analysis 2024",
+  "6": "Brand Guidelines v2",
+  "7": "Team Retrospective Notes",
+  "8": "Feature Prioritization",
 };
 
 export default function WorkspaceInterior() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   
-  const [branches, setBranches] = useState<Branch[]>(sampleBranches);
+  const isNewWorkspace = id?.startsWith("new-");
+  const workspaceType = searchParams.get("type") || "blank";
+  
+  const [workspaceName, setWorkspaceName] = useState(() => {
+    if (isNewWorkspace) {
+      return "Untitled Workspace";
+    }
+    return existingWorkspaceNames[id || "1"] || "Workspace";
+  });
+  const [isEditingName, setIsEditingName] = useState(isNewWorkspace);
+  const [branches, setBranches] = useState<Branch[]>(() => {
+    if (isNewWorkspace) {
+      return [];
+    }
+    return [{ id: "1", title: "Main Branch", createdAt: new Date().toLocaleDateString("en-GB") }];
+  });
   const [activeNav, setActiveNav] = useState("home");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const workspaceName = workspaceNames[id || "1"] || "Workspace";
 
   const handleNavClick = (navId: string) => {
     setActiveNav(navId);
@@ -48,7 +64,7 @@ export default function WorkspaceInterior() {
   const handleNewBranch = () => {
     const newBranch: Branch = {
       id: Date.now().toString(),
-      title: `New Branch ${branches.length + 1}`,
+      title: `Branch ${branches.length + 1}`,
       createdAt: new Date().toLocaleDateString("en-GB"),
     };
     setBranches([...branches, newBranch]);
@@ -60,17 +76,26 @@ export default function WorkspaceInterior() {
 
   const handleCreateWorkspace = (type: string) => {
     setIsModalOpen(false);
+    const newId = `new-${Date.now()}`;
     toast({
       title: "Workspace created",
       description: `Your new ${type} workspace is ready.`,
     });
-    navigate("/");
+    navigate(`/workspace/${newId}?type=${type}`);
   };
 
   const handleBranchClick = (branchId: string) => {
+    navigate(`/workspace/${id}/branch/${branchId}`);
+  };
+
+  const handleNameSave = () => {
+    setIsEditingName(false);
+    if (workspaceName.trim() === "") {
+      setWorkspaceName("Untitled Workspace");
+    }
     toast({
-      title: "Opening branch",
-      description: "Branch view coming soon.",
+      title: "Workspace renamed",
+      description: `Workspace is now "${workspaceName}".`,
     });
   };
 
@@ -98,9 +123,31 @@ export default function WorkspaceInterior() {
                 <GitBranch className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
                   <h1 className="text-xl font-semibold text-foreground">Branches</h1>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Thinking tracks for {workspaceName}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {isEditingName ? (
+                      <Input
+                        value={workspaceName}
+                        onChange={(e) => setWorkspaceName(e.target.value)}
+                        onBlur={handleNameSave}
+                        onKeyDown={(e) => e.key === "Enter" && handleNameSave()}
+                        className="h-7 text-sm w-64"
+                        autoFocus
+                        placeholder="Enter workspace name..."
+                      />
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Thinking tracks for {workspaceName}
+                        </p>
+                        <button
+                          onClick={() => setIsEditingName(true)}
+                          className="p-1 hover:bg-secondary rounded transition-colors"
+                        >
+                          <Edit2 className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               
@@ -110,21 +157,42 @@ export default function WorkspaceInterior() {
               </Button>
             </div>
 
-            {/* Branch Cards */}
-            <div className="space-y-3">
-              {branches.map((branch) => (
-                <div
-                  key={branch.id}
-                  onClick={() => handleBranchClick(branch.id)}
-                  className="p-4 bg-card border border-border rounded-lg hover:border-border/80 hover:shadow-sm transition-all cursor-pointer"
-                >
-                  <h3 className="font-medium text-foreground">{branch.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Created {branch.createdAt}
-                  </p>
+            {/* Empty State for New Workspace */}
+            {branches.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+                  <GitBranch className="h-8 w-8 text-muted-foreground" />
                 </div>
-              ))}
-            </div>
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  Start your first branch
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm mb-6">
+                  Branches are thinking tracks where you can explore ideas, have conversations with AI, and create artifacts.
+                </p>
+                <Button onClick={handleNewBranch} className="gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Create First Branch
+                </Button>
+              </div>
+            )}
+
+            {/* Branch Cards */}
+            {branches.length > 0 && (
+              <div className="space-y-3">
+                {branches.map((branch) => (
+                  <div
+                    key={branch.id}
+                    onClick={() => handleBranchClick(branch.id)}
+                    className="p-4 bg-card border border-border rounded-lg hover:border-border/80 hover:shadow-sm transition-all cursor-pointer"
+                  >
+                    <h3 className="font-medium text-foreground">{branch.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Created {branch.createdAt}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </main>
       </div>
