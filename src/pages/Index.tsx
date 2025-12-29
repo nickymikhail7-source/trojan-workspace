@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { FileText, Layers, Lightbulb, BookOpen, PenTool, Target } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { LeftRail } from "@/components/LeftRail";
 import { WorkspaceCard, NewWorkspaceCard, Workspace } from "@/components/WorkspaceCard";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
 import { useToast } from "@/hooks/use-toast";
-
 // Sample data
 const recentWorkspaces: Workspace[] = [
   {
@@ -99,8 +99,16 @@ const allWorkspaces: Workspace[] = [
 export default function Index() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("home");
+  const navigate = useNavigate();
   const { toast } = useToast();
 
+  const handleNavClick = (id: string) => {
+    setActiveNav(id);
+    if (id === "recent") navigate("/recent");
+    else if (id === "templates") navigate("/templates");
+    else if (id === "library") navigate("/library");
+    else if (id === "settings") navigate("/settings");
+  };
   // Keyboard shortcut for search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -124,10 +132,7 @@ export default function Index() {
   };
 
   const handleWorkspaceClick = (workspace: Workspace) => {
-    toast({
-      title: `Opening "${workspace.title}"`,
-      description: "Workspace view coming soon.",
-    });
+    navigate(`/workspace/${workspace.id}`);
   };
 
   return (
@@ -135,7 +140,7 @@ export default function Index() {
       <TopBar onNewWorkspace={() => setIsModalOpen(true)} />
       
       <div className="flex flex-1 overflow-hidden">
-        <LeftRail activeItem={activeNav} onItemClick={setActiveNav} />
+        <LeftRail activeItem={activeNav} onItemClick={handleNavClick} />
         
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-6 py-8">
