@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Layers, Lightbulb, BookOpen, PenTool, Target } from "lucide-react";
+import { FileText, Layers, Lightbulb, BookOpen, PenTool, Target, Code, BarChart3, CheckSquare } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { LeftRail } from "@/components/LeftRail";
 import { WorkspaceCard, NewWorkspaceCard, Workspace } from "@/components/WorkspaceCard";
@@ -14,9 +14,9 @@ const recentWorkspaces: Workspace[] = [
     lastActive: "Active 3 hours ago",
     tags: ["Strategy", "Planning"],
     artifacts: [
-      { type: "doc", icon: FileText },
-      { type: "diagram", icon: Layers },
-      { type: "idea", icon: Lightbulb },
+      { type: "target", icon: Target },
+      { type: "chart", icon: BarChart3 },
+      { type: "checklist", icon: CheckSquare },
     ],
   },
   {
@@ -25,8 +25,8 @@ const recentWorkspaces: Workspace[] = [
     lastActive: "Active yesterday",
     tags: ["Pitch"],
     artifacts: [
-      { type: "doc", icon: FileText },
       { type: "design", icon: PenTool },
+      { type: "chart", icon: BarChart3 },
     ],
   },
   {
@@ -35,10 +35,8 @@ const recentWorkspaces: Workspace[] = [
     lastActive: "Active 2 days ago",
     tags: ["Architecture"],
     artifacts: [
+      { type: "code", icon: Code },
       { type: "diagram", icon: Layers },
-      { type: "doc", icon: FileText },
-      { type: "doc", icon: FileText },
-      { type: "target", icon: Target },
     ],
   },
   {
@@ -47,8 +45,9 @@ const recentWorkspaces: Workspace[] = [
     lastActive: "Active 3 days ago",
     tags: ["Research", "Design"],
     artifacts: [
-      { type: "doc", icon: FileText },
       { type: "book", icon: BookOpen },
+      { type: "idea", icon: Lightbulb },
+      { type: "doc", icon: FileText },
     ],
   },
   {
@@ -57,8 +56,8 @@ const recentWorkspaces: Workspace[] = [
     lastActive: "Active 5 days ago",
     tags: ["Research", "Strategy"],
     artifacts: [
-      { type: "doc", icon: FileText },
-      { type: "layers", icon: Layers },
+      { type: "chart", icon: BarChart3 },
+      { type: "book", icon: BookOpen },
     ],
   },
 ];
@@ -72,7 +71,6 @@ const allWorkspaces: Workspace[] = [
     tags: ["Design"],
     artifacts: [
       { type: "design", icon: PenTool },
-      { type: "doc", icon: FileText },
     ],
   },
   {
@@ -81,7 +79,8 @@ const allWorkspaces: Workspace[] = [
     lastActive: "Active 2 weeks ago",
     tags: ["Planning"],
     artifacts: [
-      { type: "doc", icon: FileText },
+      { type: "checklist", icon: CheckSquare },
+      { type: "idea", icon: Lightbulb },
     ],
   },
   {
@@ -90,8 +89,9 @@ const allWorkspaces: Workspace[] = [
     lastActive: "Active 2 weeks ago",
     tags: ["Strategy", "Planning"],
     artifacts: [
-      { type: "layers", icon: Layers },
       { type: "target", icon: Target },
+      { type: "diagram", icon: Layers },
+      { type: "code", icon: Code },
     ],
   },
 ];
