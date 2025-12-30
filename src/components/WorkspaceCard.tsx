@@ -4,6 +4,20 @@ import { useState } from "react";
 import { ShareModal } from "./ShareModal";
 import { ArtifactPreviewModal } from "./ArtifactPreviewModal";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const artifactLabels: Record<string, string> = {
+  doc: "Document",
+  diagram: "Diagram", 
+  idea: "Insight",
+  target: "Goal",
+  book: "Research",
+  design: "Design",
+  layers: "Layers",
+  code: "Code",
+  chart: "Chart",
+  checklist: "Checklist",
+};
 
 export interface Workspace {
   id: string;
@@ -137,17 +151,24 @@ export function WorkspaceCard({ workspace, className, variant = "default", onCli
               className="flex items-center gap-2 pt-2 border-t border-border cursor-pointer hover:bg-secondary/30 -mx-4 px-4 -mb-4 pb-4 rounded-b-xl transition-colors"
               onClick={handleArtifactStripClick}
             >
+            <TooltipProvider delayDuration={200}>
               {workspace.artifacts.slice(0, 4).map((artifact, idx) => {
                 const Icon = artifact.icon;
+                const label = artifactLabels[artifact.type] || artifact.type;
                 return (
-                  <div
-                    key={idx}
-                    className="h-6 w-6 rounded bg-secondary flex items-center justify-center"
-                  >
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
+                  <Tooltip key={idx}>
+                    <TooltipTrigger asChild>
+                      <div className="h-6 w-6 rounded bg-secondary flex items-center justify-center">
+                        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      {label}
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
+            </TooltipProvider>
               {workspace.artifacts.length > 4 && (
                 <span className="text-[10px] text-muted-foreground">
                   +{workspace.artifacts.length - 4}

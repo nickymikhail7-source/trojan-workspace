@@ -1,4 +1,4 @@
-import { FileText, Layers, Lightbulb, Target, BookOpen, PenTool, X } from "lucide-react";
+import { FileText, Layers, Lightbulb, Target, BookOpen, PenTool, Code, BarChart3, CheckSquare, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +58,21 @@ const artifactMeta: Record<string, { label: string; color: string; description: 
     label: "Layers",
     color: "bg-teal-50 text-teal-700 border-teal-200",
     description: "Layered content or architecture",
+  },
+  code: {
+    label: "Code",
+    color: "bg-slate-100 text-slate-700 border-slate-200",
+    description: "Code snippets or technical implementation",
+  },
+  chart: {
+    label: "Chart",
+    color: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    description: "Data visualization or analytics",
+  },
+  checklist: {
+    label: "Checklist",
+    color: "bg-green-50 text-green-700 border-green-200",
+    description: "Task list or action items",
   },
 };
 
