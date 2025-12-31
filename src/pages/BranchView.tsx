@@ -185,8 +185,67 @@ export default function BranchView() {
     });
   }, [toast]);
 
+  // Regenerate last assistant message
+  const handleRegenerateMessage = useCallback((messageId: string) => {
+    // Find the user message that preceded this assistant message
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    if (messageIndex === -1) return;
+
+    // Find the preceding user message
+    let userMessageContent = "";
+    for (let i = messageIndex - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        userMessageContent = messages[i].content;
+        break;
+      }
+    }
+
+    // Remove the assistant message and regenerate
+    setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    setIsStreaming(true);
+
+    // Create new AI response
+    const aiMessage: Message = {
+      id: Date.now().toString(),
+      role: "assistant",
+      content: "",
+      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      status: "streaming",
+    };
+
+    setMessages((prev) => [...prev, aiMessage]);
+
+    // Simulate streaming response
+    const responseText = getSimulatedResponse(userMessageContent);
+    let currentIndex = 0;
+
+    const streamInterval = setInterval(() => {
+      if (currentIndex < responseText.length) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessage.id
+              ? { ...msg, content: responseText.slice(0, currentIndex + 1) }
+              : msg
+          )
+        );
+        currentIndex++;
+      } else {
+        clearInterval(streamInterval);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessage.id ? { ...msg, status: "complete" } : msg
+          )
+        );
+        setIsStreaming(false);
+      }
+    }, 20);
+  }, [messages]);
+
   // Get pinned messages
   const pinnedMessages = messages.filter((m) => pinnedMessageIds.has(m.id));
+
+  // Find last assistant message id
+  const lastAssistantMessageId = [...messages].reverse().find((m) => m.role === "assistant" && m.status === "complete")?.id;
 
   const getSimulatedResponse = (input: string): string => {
     const responses = [
@@ -243,6 +302,8 @@ export default function BranchView() {
                       message={{ ...message, isPinned: pinnedMessageIds.has(message.id) }}
                       onPin={handlePinMessage}
                       onBranch={handleBranchMessage}
+                      onRegenerate={handleRegenerateMessage}
+                      isLastAssistantMessage={message.id === lastAssistantMessageId}
                     />
                   </div>
                 ))}
