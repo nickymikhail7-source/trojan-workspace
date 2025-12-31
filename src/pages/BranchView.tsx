@@ -1,28 +1,25 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, StopCircle, Sparkles, FileText, Lightbulb, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { LeftRail } from "@/components/LeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
-  status: "sending" | "streaming" | "complete" | "error";
-}
+import {
+  ChatMessage,
+  ChatComposer,
+  ChatEmptyState,
+  ThinkingIndicator,
+  type Message,
+  type ChatComposerRef,
+} from "@/components/chat";
 
 export default function BranchView() {
   const { id: workspaceId, branchId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const composerRef = useRef<ChatComposerRef>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
@@ -118,11 +115,9 @@ export default function BranchView() {
     );
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+  const handlePromptClick = (prompt: string) => {
+    setInputValue(prompt);
+    composerRef.current?.focus();
   };
 
   const getSimulatedResponse = (input: string): string => {
@@ -133,6 +128,9 @@ export default function BranchView() {
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   };
+
+  // Check if currently streaming (for thinking indicator)
+  const showThinking = isStreaming && messages.some(m => m.status === "streaming" && m.content === "");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -165,125 +163,37 @@ export default function BranchView() {
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center px-6 py-12">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
-                  <Sparkles className="h-8 w-8 text-primary" />
-                </div>
-                <h2 className="text-xl font-semibold text-foreground mb-2">Start thinking</h2>
-                <p className="text-sm text-muted-foreground text-center max-w-md mb-8">
-                  This is your thinking space. Ask questions, explore ideas, and work through problems together with AI.
-                </p>
-                
-                {/* Starter prompts */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg w-full">
-                  {[
-                    { icon: FileText, text: "Help me write a product brief" },
-                    { icon: Lightbulb, text: "Brainstorm solutions for..." },
-                  ].map((prompt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setInputValue(prompt.text);
-                        textareaRef.current?.focus();
-                      }}
-                      className="flex items-center gap-3 p-4 bg-card border border-border rounded-lg hover:border-primary/30 hover:bg-card/80 transition-all text-left group"
-                    >
-                      <prompt.icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
-                      <span className="text-sm text-foreground">{prompt.text}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <ChatEmptyState onPromptClick={handlePromptClick} />
             ) : (
-              <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+              <div className="max-w-[720px] mx-auto px-6 py-8 space-y-6">
                 {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex gap-4",
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {message.role === "assistant" && (
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                      </div>
-                    )}
-                    <div
-                      className={cn(
-                        "max-w-[80%] rounded-2xl px-4 py-3",
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-foreground"
-                      )}
-                    >
-                      <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                        {message.content}
-                        {message.status === "streaming" && (
-                          <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
-                        )}
-                      </div>
-                      <div
-                        className={cn(
-                          "text-xs mt-2",
-                          message.role === "user"
-                            ? "text-primary-foreground/70"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        {message.timestamp}
-                      </div>
-                    </div>
-                    {message.role === "user" && (
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 mt-1">
-                        <span className="text-xs font-medium text-muted-foreground">You</span>
-                      </div>
-                    )}
-                  </div>
+                  <ChatMessage key={message.id} message={message} />
                 ))}
+                
+                {/* Thinking Indicator */}
+                {showThinking && (
+                  <div className="pt-2">
+                    <ThinkingIndicator />
+                  </div>
+                )}
+                
                 <div ref={messagesEndRef} />
               </div>
             )}
           </div>
 
-          {/* Input Area */}
-          <div className="border-t border-border bg-card p-4 shrink-0">
-            <div className="max-w-3xl mx-auto">
-              <div className="relative flex items-end gap-2">
-                <Textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="What would you like to think about?"
-                  className="min-h-[52px] max-h-[200px] resize-none pr-12"
-                  rows={1}
-                />
-                <div className="absolute right-2 bottom-2">
-                  {isStreaming ? (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={handleStopGeneration}
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                    >
-                      <StopCircle className="h-5 w-5" />
-                    </Button>
-                  ) : (
-                    <Button
-                      size="icon"
-                      onClick={handleSendMessage}
-                      disabled={!inputValue.trim()}
-                      className="h-8 w-8"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Press Enter to send, Shift+Enter for new line
-              </p>
+          {/* Composer Area */}
+          <div className="border-t border-border bg-background/80 backdrop-blur-sm p-4 shrink-0">
+            <div className="max-w-[720px] mx-auto">
+              <ChatComposer
+                ref={composerRef}
+                value={inputValue}
+                onChange={setInputValue}
+                onSend={handleSendMessage}
+                onStop={handleStopGeneration}
+                isStreaming={isStreaming}
+                placeholder="What would you like to think about?"
+              />
             </div>
           </div>
         </main>
