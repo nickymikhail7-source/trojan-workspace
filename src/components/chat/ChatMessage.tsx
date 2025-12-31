@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Bookmark, Check, Sparkles, Pin, GitBranch } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, Bookmark, Check, Sparkles, Pin, GitBranch, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -18,9 +18,11 @@ interface ChatMessageProps {
   message: Message;
   onPin?: (messageId: string) => void;
   onBranch?: (messageId: string) => void;
+  onRegenerate?: (messageId: string) => void;
+  isLastAssistantMessage?: boolean;
 }
 
-export function ChatMessage({ message, onPin, onBranch }: ChatMessageProps) {
+export function ChatMessage({ message, onPin, onBranch, onRegenerate, isLastAssistantMessage }: ChatMessageProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [reaction, setReaction] = useState<"up" | "down" | null>(null);
@@ -58,6 +60,10 @@ export function ChatMessage({ message, onPin, onBranch }: ChatMessageProps) {
       title: "New branch created",
       description: "A new conversation branch has been started from this message.",
     });
+  };
+
+  const handleRegenerate = () => {
+    onRegenerate?.(message.id);
   };
 
   const isUser = message.role === "user";
@@ -188,6 +194,25 @@ export function ChatMessage({ message, onPin, onBranch }: ChatMessageProps) {
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">
                     Branch conversation
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Regenerate (last assistant message only) */}
+              {!isUser && isLastAssistantMessage && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-background"
+                      onClick={handleRegenerate}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Regenerate response
                   </TooltipContent>
                 </Tooltip>
               )}
