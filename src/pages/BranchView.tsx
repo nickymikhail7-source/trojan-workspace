@@ -208,23 +208,21 @@ export default function BranchView() {
         <LeftRail activeItem={activeNav} onItemClick={handleNavClick} />
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Branch Header */}
-          <div className="border-b border-border bg-card px-6 py-4 shrink-0">
+          {/* Compact Branch Header */}
+          <div className="border-b border-border bg-card/50 px-4 py-2 shrink-0 flex items-center gap-3">
             <button
               onClick={() => navigate(`/workspace/${workspaceId}`)}
-              className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors mb-3"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Branches
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back</span>
             </button>
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-primary" />
+            <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
+                <Sparkles className="h-3 w-3 text-primary" />
               </div>
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">Branch {branchId?.slice(-4)}</h1>
-                <p className="text-xs text-muted-foreground">Think together with AI</p>
-              </div>
+              <span className="text-sm font-medium text-foreground">Branch {branchId?.slice(-4)}</span>
             </div>
           </div>
 
@@ -233,7 +231,7 @@ export default function BranchView() {
             {messages.length === 0 ? (
               <ChatEmptyState onPromptClick={handlePromptClick} />
             ) : (
-              <div className="max-w-[720px] mx-auto px-6 py-8 space-y-6">
+              <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -262,8 +260,8 @@ export default function BranchView() {
           </div>
 
           {/* Composer Area */}
-          <div className="border-t border-border bg-background/80 backdrop-blur-sm p-4 shrink-0">
-            <div className="max-w-[720px] mx-auto">
+          <div className="border-t border-border/50 bg-background/60 backdrop-blur-sm px-4 py-3 shrink-0">
+            <div className="max-w-3xl mx-auto">
               <ChatComposer
                 ref={composerRef}
                 value={inputValue}

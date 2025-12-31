@@ -86,44 +86,33 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
     const canSend = value.trim().length > 0 && !isStreaming && !disabled;
 
     return (
-      <div className="w-full animate-fade-in">
+      <div className="w-full">
         {/* Main Composer Container */}
         <div 
           className={cn(
-            "relative bg-card rounded-2xl overflow-hidden transition-all duration-300",
-            "border shadow-card",
+            "relative bg-card/80 rounded-xl overflow-hidden transition-all duration-200",
+            "border",
             isFocused 
-              ? "border-primary/40 shadow-lg shadow-primary/5 ring-4 ring-primary/5" 
-              : "border-border hover:border-border/80 hover:shadow-lg"
+              ? "border-primary/30 shadow-sm" 
+              : "border-border/60 hover:border-border"
           )}
         >
-          {/* Gradient accent line at top */}
-          <div className={cn(
-            "absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent",
-            "opacity-0 transition-opacity duration-300",
-            isFocused && "opacity-100"
-          )} />
 
           {/* Attached Files */}
           {attachedFiles.length > 0 && (
-            <div className="px-4 pt-3 pb-2 border-b border-border/50 flex flex-wrap gap-2 animate-fade-in">
+            <div className="px-3 pt-2 pb-1 border-b border-border/30 flex flex-wrap gap-1.5">
               {attachedFiles.map((file) => (
                 <div
                   key={file.id}
-                  className="flex items-center gap-2 bg-secondary/70 hover:bg-secondary rounded-xl px-3 py-2 text-xs group/file transition-colors"
+                  className="flex items-center gap-1.5 bg-secondary/50 rounded-lg px-2 py-1 text-xs group/file"
                 >
-                  <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Paperclip className="h-3 w-3 text-primary" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-foreground font-medium max-w-[100px] truncate">{file.name}</span>
-                    <span className="text-muted-foreground text-[10px]">{formatFileSize(file.size)}</span>
-                  </div>
+                  <Paperclip className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-foreground max-w-[80px] truncate">{file.name}</span>
                   <button
                     onClick={() => removeFile(file.id)}
-                    className="ml-1 h-5 w-5 rounded-full bg-muted/50 hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                    className="h-4 w-4 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-2.5 w-2.5" />
                   </button>
                 </div>
               ))}
@@ -131,7 +120,7 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
           )}
 
           {/* Input Row */}
-          <div className="flex items-end gap-2 p-3">
+          <div className="flex items-end gap-1.5 p-2">
             {/* Attach Button */}
             <TooltipProvider delayDuration={300}>
               <Tooltip>
@@ -140,11 +129,11 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 shrink-0 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                    className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                     onClick={handleAttachClick}
                     disabled={disabled}
                   >
-                    <Paperclip className="h-5 w-5" />
+                    <Paperclip className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
@@ -162,7 +151,7 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
             />
 
             {/* Textarea */}
-            <div className="flex-1 relative">
+            <div className="flex-1">
               <textarea
                 ref={textareaRef}
                 value={value}
@@ -174,10 +163,10 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                 disabled={disabled || isStreaming}
                 rows={1}
                 className={cn(
-                  "w-full min-h-[40px] max-h-[160px] resize-none",
+                  "w-full min-h-[36px] max-h-[120px] resize-none",
                   "bg-transparent text-sm text-foreground placeholder:text-muted-foreground",
-                  "focus:outline-none py-2.5 px-1",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                  "focus:outline-none py-2 px-1",
+                  "disabled:opacity-50"
                 )}
               />
             </div>
@@ -190,30 +179,30 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                     <Button
                       type="button"
                       size="icon"
-                      className="h-10 w-10 shrink-0 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-all duration-200"
+                      className="h-8 w-8 shrink-0 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"
                       onClick={onStop}
                     >
-                      <Square className="h-4 w-4 fill-current" />
+                      <Square className="h-3.5 w-3.5 fill-current" />
                     </Button>
                   ) : (
                     <Button
                       type="button"
                       size="icon"
                       className={cn(
-                        "h-10 w-10 shrink-0 rounded-xl transition-all duration-200",
+                        "h-8 w-8 shrink-0 rounded-lg transition-colors",
                         canSend
-                          ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-105"
-                          : "bg-secondary text-muted-foreground cursor-not-allowed"
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                          : "bg-secondary text-muted-foreground"
                       )}
                       onClick={onSend}
                       disabled={!canSend}
                     >
-                      <Send className="h-4 w-4" />
+                      <Send className="h-3.5 w-3.5" />
                     </Button>
                   )}
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                  {isStreaming ? "Stop generating" : "Send message"}
+                  {isStreaming ? "Stop" : "Send"}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -221,20 +210,19 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
         </div>
 
         {/* Helper Text */}
-        <div className="flex items-center justify-center gap-2 mt-3">
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Sparkles className="h-3 w-3" />
-            <span>AI-powered thinking partner</span>
-          </div>
-          <span className="text-muted-foreground/30">•</span>
-          <span className="text-[11px] text-muted-foreground">
-            <kbd className="px-1.5 py-0.5 rounded bg-secondary text-[10px] font-mono">Enter</kbd> to send
-            <span className="mx-1.5">·</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-secondary text-[10px] font-mono">Shift+Enter</kbd> new line
+        <div className="flex items-center justify-center gap-1.5 mt-2 text-[10px] text-muted-foreground/70">
+          <Sparkles className="h-2.5 w-2.5" />
+          <span>AI-powered thinking partner</span>
+          <span className="mx-1">•</span>
+          <span>
+            <kbd className="px-1 py-0.5 rounded bg-secondary/50 text-[9px] font-mono">Enter</kbd> to send
+            <span className="mx-1">·</span>
+            <kbd className="px-1 py-0.5 rounded bg-secondary/50 text-[9px] font-mono">Shift+Enter</kbd> new line
           </span>
         </div>
       </div>
     );
+
   }
 );
 
