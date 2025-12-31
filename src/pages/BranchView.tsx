@@ -290,7 +290,7 @@ export default function BranchView() {
             {messages.length === 0 ? (
               <ChatEmptyState onPromptClick={handlePromptClick} />
             ) : (
-              <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
+              <div className="max-w-4xl mx-auto px-6 py-6 space-y-5">
                 {messages.map((message) => (
                   <div
                     key={message.id}
@@ -321,8 +321,8 @@ export default function BranchView() {
           </div>
 
           {/* Composer Area */}
-          <div className="border-t border-border/50 bg-background/60 backdrop-blur-sm px-4 py-3 shrink-0">
-            <div className="max-w-3xl mx-auto">
+          <div className="border-t border-border/50 bg-background/60 backdrop-blur-sm px-6 py-2 shrink-0">
+            <div className="max-w-4xl mx-auto">
               <ChatComposer
                 ref={composerRef}
                 value={inputValue}

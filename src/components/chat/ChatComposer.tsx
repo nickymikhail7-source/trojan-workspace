@@ -120,7 +120,7 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
           )}
 
           {/* Input Row */}
-          <div className="flex items-end gap-1.5 p-2">
+          <div className="flex items-center gap-1.5 px-2 py-1.5">
             {/* Attach Button */}
             <TooltipProvider delayDuration={300}>
               <Tooltip>
@@ -129,11 +129,11 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 shrink-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                    className="h-7 w-7 shrink-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                     onClick={handleAttachClick}
                     disabled={disabled}
                   >
-                    <Paperclip className="h-4 w-4" />
+                    <Paperclip className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
@@ -151,7 +151,7 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
             />
 
             {/* Textarea */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
                 value={value}
@@ -163,9 +163,9 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                 disabled={disabled || isStreaming}
                 rows={1}
                 className={cn(
-                  "w-full min-h-[36px] max-h-[120px] resize-none",
+                  "w-full min-h-[32px] max-h-[100px] resize-none",
                   "bg-transparent text-sm text-foreground placeholder:text-muted-foreground",
-                  "focus:outline-none py-2 px-1",
+                  "focus:outline-none py-1.5 px-1",
                   "disabled:opacity-50"
                 )}
               />
@@ -179,17 +179,17 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                     <Button
                       type="button"
                       size="icon"
-                      className="h-8 w-8 shrink-0 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20"
+                      className="h-7 w-7 shrink-0 rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"
                       onClick={onStop}
                     >
-                      <Square className="h-3.5 w-3.5 fill-current" />
+                      <Square className="h-3 w-3 fill-current" />
                     </Button>
                   ) : (
                     <Button
                       type="button"
                       size="icon"
                       className={cn(
-                        "h-8 w-8 shrink-0 rounded-lg transition-colors",
+                        "h-7 w-7 shrink-0 rounded-md transition-colors",
                         canSend
                           ? "bg-primary text-primary-foreground hover:bg-primary/90"
                           : "bg-secondary text-muted-foreground"
@@ -197,7 +197,7 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                       onClick={onSend}
                       disabled={!canSend}
                     >
-                      <Send className="h-3.5 w-3.5" />
+                      <Send className="h-3 w-3" />
                     </Button>
                   )}
                 </TooltipTrigger>
