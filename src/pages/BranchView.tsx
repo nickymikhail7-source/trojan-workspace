@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
@@ -10,8 +10,10 @@ import {
   ChatComposer,
   ChatEmptyState,
   ThinkingIndicator,
+  ChatSidebar,
   type Message,
   type ChatComposerRef,
+  type Branch,
 } from "@/components/chat";
 
 export default function BranchView() {
@@ -19,6 +21,7 @@ export default function BranchView() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const composerRef = useRef<ChatComposerRef>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,6 +29,9 @@ export default function BranchView() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeNav, setActiveNav] = useState("home");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set());
+  const [branches, setBranches] = useState<Branch[]>([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -120,6 +126,68 @@ export default function BranchView() {
     composerRef.current?.focus();
   };
 
+  // Pin/Unpin message handler
+  const handlePinMessage = useCallback((messageId: string) => {
+    setPinnedMessageIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Branch from message handler
+  const handleBranchMessage = useCallback((messageId: string) => {
+    const message = messages.find((m) => m.id === messageId);
+    if (!message) return;
+
+    const newBranch: Branch = {
+      id: `branch-${Date.now()}`,
+      name: `Branch ${branches.length + 1}`,
+      messageId,
+      createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      preview: message.content.slice(0, 80) + (message.content.length > 80 ? "..." : ""),
+    };
+
+    setBranches((prev) => [...prev, newBranch]);
+  }, [messages, branches.length]);
+
+  // Scroll to pinned message
+  const handlePinnedMessageClick = useCallback((messageId: string) => {
+    const element = messageRefs.current.get(messageId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("animate-pulse");
+      setTimeout(() => element.classList.remove("animate-pulse"), 1500);
+    }
+    setIsSidebarOpen(false);
+  }, []);
+
+  // Navigate to branch
+  const handleBranchClick = useCallback((branchIdToNav: string) => {
+    toast({
+      title: "Opening branch",
+      description: "Navigating to the branched conversation...",
+    });
+    setIsSidebarOpen(false);
+    // In a real app, this would navigate to the branch
+    navigate(`/workspace/${workspaceId}/branch/${branchIdToNav}`);
+  }, [navigate, workspaceId, toast]);
+
+  // Delete branch
+  const handleDeleteBranch = useCallback((branchIdToDelete: string) => {
+    setBranches((prev) => prev.filter((b) => b.id !== branchIdToDelete));
+    toast({
+      description: "Branch deleted",
+    });
+  }, [toast]);
+
+  // Get pinned messages
+  const pinnedMessages = messages.filter((m) => pinnedMessageIds.has(m.id));
+
   const getSimulatedResponse = (input: string): string => {
     const responses = [
       "That's an interesting point. Let me think through this with you.\n\nBased on what you've shared, I see a few key considerations:\n\n1. **Context matters** - Understanding the full picture helps us make better decisions\n2. **Trade-offs exist** - Every choice has pros and cons we should weigh\n3. **Iteration is key** - We can refine our approach as we learn more\n\nWhat aspect would you like to explore first?",
@@ -167,7 +235,18 @@ export default function BranchView() {
             ) : (
               <div className="max-w-[720px] mx-auto px-6 py-8 space-y-6">
                 {messages.map((message) => (
-                  <ChatMessage key={message.id} message={message} />
+                  <div
+                    key={message.id}
+                    ref={(el) => {
+                      if (el) messageRefs.current.set(message.id, el);
+                    }}
+                  >
+                    <ChatMessage
+                      message={{ ...message, isPinned: pinnedMessageIds.has(message.id) }}
+                      onPin={handlePinMessage}
+                      onBranch={handleBranchMessage}
+                    />
+                  </div>
                 ))}
                 
                 {/* Thinking Indicator */}
@@ -198,6 +277,18 @@ export default function BranchView() {
           </div>
         </main>
       </div>
+
+      {/* Chat Sidebar */}
+      <ChatSidebar
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        pinnedMessages={pinnedMessages}
+        branches={branches}
+        onPinnedMessageClick={handlePinnedMessageClick}
+        onBranchClick={handleBranchClick}
+        onUnpin={handlePinMessage}
+        onDeleteBranch={handleDeleteBranch}
+      />
 
       <NewWorkspaceModal
         isOpen={isModalOpen}
