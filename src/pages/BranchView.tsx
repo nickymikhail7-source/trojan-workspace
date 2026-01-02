@@ -260,7 +260,7 @@ export default function BranchView() {
   const showThinking = isStreaming && messages.some(m => m.status === "streaming" && m.content === "");
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <TopBar onNewWorkspace={() => setIsModalOpen(true)} />
 
       <div className="flex flex-1 overflow-hidden">
