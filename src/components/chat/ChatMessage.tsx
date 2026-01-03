@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Bookmark, Check, Sparkles, Pin, GitBranch, RefreshCw } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, Bookmark, Check, Sparkles, Pin, GitBranch, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -19,10 +19,12 @@ interface ChatMessageProps {
   onPin?: (messageId: string) => void;
   onBranch?: (messageId: string) => void;
   onRegenerate?: (messageId: string) => void;
+  onEdit?: (messageId: string) => void;
+  onDelete?: (messageId: string) => void;
   isLastAssistantMessage?: boolean;
 }
 
-export function ChatMessage({ message, onPin, onBranch, onRegenerate, isLastAssistantMessage }: ChatMessageProps) {
+export function ChatMessage({ message, onPin, onBranch, onRegenerate, onEdit, onDelete, isLastAssistantMessage }: ChatMessageProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [reaction, setReaction] = useState<"up" | "down" | null>(null);
@@ -64,6 +66,14 @@ export function ChatMessage({ message, onPin, onBranch, onRegenerate, isLastAssi
 
   const handleRegenerate = () => {
     onRegenerate?.(message.id);
+  };
+
+  const handleEdit = () => {
+    onEdit?.(message.id);
+  };
+
+  const handleDelete = () => {
+    onDelete?.(message.id);
   };
 
   const isUser = message.role === "user";
@@ -217,49 +227,91 @@ export function ChatMessage({ message, onPin, onBranch, onRegenerate, isLastAssi
                 </Tooltip>
               )}
 
-              {/* Thumbs Up */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-7 w-7 rounded-md",
-                      reaction === "up"
-                        ? "text-green-500 hover:text-green-600 bg-green-500/10"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background"
-                    )}
-                    onClick={() => handleReaction("up")}
-                  >
-                    <ThumbsUp className={cn("h-3.5 w-3.5", reaction === "up" && "fill-current")} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  Good response
-                </TooltipContent>
-              </Tooltip>
+              {/* Edit (user only) */}
+              {isUser && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-background"
+                      onClick={handleEdit}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Edit message
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
-              {/* Thumbs Down */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-7 w-7 rounded-md",
-                      reaction === "down"
-                        ? "text-destructive hover:text-destructive/80 bg-destructive/10"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background"
-                    )}
-                    onClick={() => handleReaction("down")}
-                  >
-                    <ThumbsDown className={cn("h-3.5 w-3.5", reaction === "down" && "fill-current")} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  Bad response
-                </TooltipContent>
-              </Tooltip>
+              {/* Delete (user only) */}
+              {isUser && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Delete message
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Thumbs Up (assistant only) */}
+              {!isUser && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-7 w-7 rounded-md",
+                        reaction === "up"
+                          ? "text-green-500 hover:text-green-600 bg-green-500/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background"
+                      )}
+                      onClick={() => handleReaction("up")}
+                    >
+                      <ThumbsUp className={cn("h-3.5 w-3.5", reaction === "up" && "fill-current")} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Good response
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Thumbs Down (assistant only) */}
+              {!isUser && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-7 w-7 rounded-md",
+                        reaction === "down"
+                          ? "text-destructive hover:text-destructive/80 bg-destructive/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background"
+                      )}
+                      onClick={() => handleReaction("down")}
+                    >
+                      <ThumbsDown className={cn("h-3.5 w-3.5", reaction === "down" && "fill-current")} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">
+                    Bad response
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
               {/* Save as Artifact (assistant only) */}
               {!isUser && (
