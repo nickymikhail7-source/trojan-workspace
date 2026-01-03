@@ -4,6 +4,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { TopBar } from "@/components/TopBar";
 import { LeftRail } from "@/components/LeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
+import { NewBranchModal } from "@/components/NewBranchModal";
 import { useToast } from "@/hooks/use-toast";
 import {
   ChatMessage,
@@ -29,6 +30,8 @@ export default function BranchView() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeNav, setActiveNav] = useState("home");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [pendingBranchMessageId, setPendingBranchMessageId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set());
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -139,21 +142,34 @@ export default function BranchView() {
     });
   }, []);
 
-  // Branch from message handler
+  // Branch from message handler - opens modal
   const handleBranchMessage = useCallback((messageId: string) => {
-    const message = messages.find((m) => m.id === messageId);
+    setPendingBranchMessageId(messageId);
+    setIsBranchModalOpen(true);
+  }, []);
+
+  // Create branch with name from modal
+  const handleCreateBranch = useCallback((name: string) => {
+    if (!pendingBranchMessageId) return;
+    
+    const message = messages.find((m) => m.id === pendingBranchMessageId);
     if (!message) return;
 
     const newBranch: Branch = {
       id: `branch-${Date.now()}`,
-      name: `Branch ${branches.length + 1}`,
-      messageId,
+      name,
+      messageId: pendingBranchMessageId,
       createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       preview: message.content.slice(0, 80) + (message.content.length > 80 ? "..." : ""),
     };
 
     setBranches((prev) => [...prev, newBranch]);
-  }, [messages, branches.length]);
+    setPendingBranchMessageId(null);
+    toast({
+      title: "Branch created",
+      description: `"${name}" has been created.`,
+    });
+  }, [pendingBranchMessageId, messages, toast]);
 
   // Scroll to pinned message
   const handlePinnedMessageClick = useCallback((messageId: string) => {
@@ -353,6 +369,15 @@ export default function BranchView() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateWorkspace}
+      />
+
+      <NewBranchModal
+        isOpen={isBranchModalOpen}
+        onClose={() => {
+          setIsBranchModalOpen(false);
+          setPendingBranchMessageId(null);
+        }}
+        onCreate={handleCreateBranch}
       />
     </div>
   );
