@@ -1,13 +1,21 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, GitBranch, Plus, Edit2 } from "lucide-react";
+import { ArrowLeft, GitBranch, Plus, Edit2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TopBar } from "@/components/TopBar";
 import { LeftRail } from "@/components/LeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
 import { NewBranchModal } from "@/components/NewBranchModal";
+import { RenameBranchModal } from "@/components/RenameBranchModal";
+import { DeleteBranchModal } from "@/components/DeleteBranchModal";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Sample branches data
 interface Branch {
@@ -53,6 +61,8 @@ export default function WorkspaceInterior() {
   const [activeNav, setActiveNav] = useState("home");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
+  const [renameModalState, setRenameModalState] = useState<{ isOpen: boolean; branch: Branch | null }>({ isOpen: false, branch: null });
+  const [deleteModalState, setDeleteModalState] = useState<{ isOpen: boolean; branch: Branch | null }>({ isOpen: false, branch: null });
 
   const handleNavClick = (navId: string) => {
     setActiveNav(navId);
@@ -77,6 +87,24 @@ export default function WorkspaceInterior() {
     toast({
       title: "Branch created",
       description: `"${newBranch.title}" has been created.`,
+    });
+  };
+
+  const handleRenameBranch = (branchId: string, newName: string) => {
+    setBranches(branches.map(b => 
+      b.id === branchId ? { ...b, title: newName } : b
+    ));
+    toast({
+      title: "Branch renamed",
+      description: `Branch is now "${newName}".`,
+    });
+  };
+
+  const handleDeleteBranch = (branchId: string) => {
+    const branch = branches.find(b => b.id === branchId);
+    setBranches(branches.filter(b => b.id !== branchId));
+    toast({
+      description: `"${branch?.title}" has been deleted.`,
     });
   };
 
@@ -188,13 +216,49 @@ export default function WorkspaceInterior() {
                 {branches.map((branch) => (
                   <div
                     key={branch.id}
-                    onClick={() => handleBranchClick(branch.id)}
-                    className="p-4 bg-card border border-border rounded-lg hover:border-border/80 hover:shadow-sm transition-all cursor-pointer"
+                    className="group p-4 bg-card border border-border rounded-lg hover:border-border/80 hover:shadow-sm transition-all cursor-pointer flex items-start justify-between"
                   >
-                    <h3 className="font-medium text-foreground">{branch.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Created {branch.createdAt}
-                    </p>
+                    <div
+                      onClick={() => handleBranchClick(branch.id)}
+                      className="flex-1"
+                    >
+                      <h3 className="font-medium text-foreground">{branch.title}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Created {branch.createdAt}
+                      </p>
+                    </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRenameModalState({ isOpen: true, branch });
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteModalState({ isOpen: true, branch });
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))}
               </div>
@@ -213,6 +277,28 @@ export default function WorkspaceInterior() {
         isOpen={isBranchModalOpen}
         onClose={() => setIsBranchModalOpen(false)}
         onCreate={handleCreateBranch}
+      />
+
+      <RenameBranchModal
+        isOpen={renameModalState.isOpen}
+        currentName={renameModalState.branch?.title || ""}
+        onClose={() => setRenameModalState({ isOpen: false, branch: null })}
+        onRename={(newName) => {
+          if (renameModalState.branch) {
+            handleRenameBranch(renameModalState.branch.id, newName);
+          }
+        }}
+      />
+
+      <DeleteBranchModal
+        isOpen={deleteModalState.isOpen}
+        branchName={deleteModalState.branch?.title || ""}
+        onClose={() => setDeleteModalState({ isOpen: false, branch: null })}
+        onDelete={() => {
+          if (deleteModalState.branch) {
+            handleDeleteBranch(deleteModalState.branch.id);
+          }
+        }}
       />
     </div>
   );
