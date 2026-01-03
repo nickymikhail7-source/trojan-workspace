@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { TopBar } from "@/components/TopBar";
 import { LeftRail } from "@/components/LeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
+import { NewBranchModal } from "@/components/NewBranchModal";
 import { useToast } from "@/hooks/use-toast";
 
 // Sample branches data
@@ -51,6 +52,7 @@ export default function WorkspaceInterior() {
   });
   const [activeNav, setActiveNav] = useState("home");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
 
   const handleNavClick = (navId: string) => {
     setActiveNav(navId);
@@ -62,9 +64,13 @@ export default function WorkspaceInterior() {
   };
 
   const handleNewBranch = () => {
+    setIsBranchModalOpen(true);
+  };
+
+  const handleCreateBranch = (name: string) => {
     const newBranch: Branch = {
       id: Date.now().toString(),
-      title: `Branch ${branches.length + 1}`,
+      title: name,
       createdAt: new Date().toLocaleDateString("en-GB"),
     };
     setBranches([...branches, newBranch]);
@@ -201,6 +207,12 @@ export default function WorkspaceInterior() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateWorkspace}
+      />
+
+      <NewBranchModal
+        isOpen={isBranchModalOpen}
+        onClose={() => setIsBranchModalOpen(false)}
+        onCreate={handleCreateBranch}
       />
     </div>
   );
