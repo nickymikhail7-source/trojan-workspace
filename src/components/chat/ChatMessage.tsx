@@ -111,7 +111,8 @@ export function ChatMessage({ message, onPin, onBranch, onRegenerate, onEdit, on
             isUser
               ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
               : "bg-card border border-border/80 text-foreground shadow-card hover:shadow-lg hover:border-border",
-            isPinned && !isUser && "ring-2 ring-accent/30 border-accent/40"
+            isPinned && !isUser && "ring-2 ring-accent/30 border-accent/40",
+            message.status === "streaming" && !isUser && "streaming-glow"
           )}
         >
           {/* Subtle glow for user messages */}
@@ -120,9 +121,13 @@ export function ChatMessage({ message, onPin, onBranch, onRegenerate, onEdit, on
           )}
           
           <div className="relative text-sm whitespace-pre-wrap leading-relaxed">
-            {message.content}
-            {message.status === "streaming" && (
-              <span className="inline-block w-2 h-4 bg-accent/70 animate-pulse ml-1 rounded-sm" />
+            {message.status === "streaming" ? (
+              <>
+                <span className="animate-text-reveal">{message.content}</span>
+                <span className="inline-block w-0.5 h-4 bg-accent animate-blink ml-0.5 rounded-sm align-middle" />
+              </>
+            ) : (
+              message.content
             )}
           </div>
         </div>
