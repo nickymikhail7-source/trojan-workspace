@@ -3,6 +3,8 @@ import { Send, Square, Paperclip, X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PromptRefineDropdown } from "./PromptRefineDropdown";
+import { ModeSelector, type ResponseMode } from "./ModeSelector";
 
 interface AttachedFile {
   id: string;
@@ -13,7 +15,7 @@ interface AttachedFile {
 interface ChatComposerProps {
   value: string;
   onChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (value?: string, mode?: ResponseMode) => void;
   onStop?: () => void;
   isStreaming?: boolean;
   placeholder?: string;
@@ -30,6 +32,8 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [isFocused, setIsFocused] = useState(false);
+    const [responseMode, setResponseMode] = useState<ResponseMode>("auto");
+    const [useWorkspaceKnowledge, setUseWorkspaceKnowledge] = useState(false);
 
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus(),
@@ -49,7 +53,7 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         if (value.trim() && !isStreaming) {
-          onSend();
+          onSend(value, responseMode);
         }
       }
     };
@@ -77,10 +81,13 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
       setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
     };
 
-    const formatFileSize = (bytes: number) => {
-      if (bytes < 1024) return `${bytes} B`;
-      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    const handleRefine = (refinedPrompt: string) => {
+      onChange(refinedPrompt);
+    };
+
+    const handleRefineSend = (refinedPrompt: string) => {
+      onChange(refinedPrompt);
+      onSend(refinedPrompt, responseMode);
     };
 
     const canSend = value.trim().length > 0 && !isStreaming && !disabled;
@@ -121,6 +128,15 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
 
           {/* Input Row */}
           <div className="flex items-center gap-1.5 px-2 py-1.5">
+            {/* Mode Selector */}
+            <ModeSelector
+              value={responseMode}
+              onChange={setResponseMode}
+              useWorkspaceKnowledge={useWorkspaceKnowledge}
+              onWorkspaceKnowledgeChange={setUseWorkspaceKnowledge}
+              disabled={disabled || isStreaming}
+            />
+
             {/* Attach Button */}
             <TooltipProvider delayDuration={300}>
               <Tooltip>
@@ -171,6 +187,16 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
               />
             </div>
 
+            {/* Refine Button */}
+            <TooltipProvider delayDuration={300}>
+              <PromptRefineDropdown
+                prompt={value}
+                onRefine={handleRefine}
+                onSend={handleRefineSend}
+                disabled={disabled || isStreaming}
+              />
+            </TooltipProvider>
+
             {/* Send / Stop Button */}
             <TooltipProvider delayDuration={300}>
               <Tooltip>
@@ -194,7 +220,7 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                           ? "bg-primary text-primary-foreground hover:bg-primary/90"
                           : "bg-secondary text-muted-foreground"
                       )}
-                      onClick={onSend}
+                      onClick={() => onSend(value, responseMode)}
                       disabled={!canSend}
                     >
                       <Send className="h-3 w-3" />

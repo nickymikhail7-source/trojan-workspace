@@ -63,13 +63,14 @@ export default function BranchView() {
     navigate(`/workspace/${newId}?type=${type}`);
   };
 
-  const handleSendMessage = () => {
-    if (!inputValue.trim() || isStreaming) return;
+  const handleSendMessage = (value?: string, mode?: string) => {
+    const messageContent = value || inputValue;
+    if (!messageContent.trim() || isStreaming) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: inputValue.trim(),
+      content: messageContent.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       status: "complete",
     };
@@ -85,12 +86,13 @@ export default function BranchView() {
       content: "",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       status: "streaming",
+      responseMode: mode as any,
     };
 
     setMessages((prev) => [...prev, aiMessage]);
 
     // Simulate streaming response
-    const responseText = getSimulatedResponse(inputValue);
+    const responseText = getSimulatedResponse(messageContent);
     let currentIndex = 0;
 
     const streamInterval = setInterval(() => {
