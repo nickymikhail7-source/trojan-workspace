@@ -2,4 +2,8 @@ export { ChatMessage, type Message } from "./ChatMessage";
 export { ChatComposer, type ChatComposerRef } from "./ChatComposer";
 export { ChatEmptyState } from "./ChatEmptyState";
 export { ThinkingIndicator, StreamingCursor, MessageSkeleton } from "./ThinkingIndicator";
+export { PromptRefineDropdown } from "./PromptRefineDropdown";
+export { PromptRefineModal } from "./PromptRefineModal";
+export { ResponseTransformToolbar, TransformBadge, type TransformType } from "./ResponseTransformToolbar";
+export { ModeSelector, ModeBadge, type ResponseMode } from "./ModeSelector";
 export { ChatSidebar, type Branch } from "./ChatSidebar";

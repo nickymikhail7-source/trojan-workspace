@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Copy, ThumbsUp, ThumbsDown, Bookmark, Check, Sparkles, Pin, GitBranch, RefreshCw, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { ResponseTransformToolbar, TransformBadge, type TransformType } from "./ResponseTransformToolbar";
+import { ModeBadge, type ResponseMode } from "./ModeSelector";
 
 export interface Message {
   id: string;
@@ -12,6 +14,7 @@ export interface Message {
   timestamp: string;
   status: "sending" | "streaming" | "complete" | "error";
   isPinned?: boolean;
+  responseMode?: ResponseMode;
 }
 
 interface ChatMessageProps {
@@ -21,14 +24,27 @@ interface ChatMessageProps {
   onRegenerate?: (messageId: string) => void;
   onEdit?: (messageId: string) => void;
   onDelete?: (messageId: string) => void;
+  onTransform?: (messageId: string, type: TransformType) => void;
   isLastAssistantMessage?: boolean;
 }
 
-export function ChatMessage({ message, onPin, onBranch, onRegenerate, onEdit, onDelete, isLastAssistantMessage }: ChatMessageProps) {
+export function ChatMessage({ 
+  message, 
+  onPin, 
+  onBranch, 
+  onRegenerate, 
+  onEdit, 
+  onDelete, 
+  onTransform,
+  isLastAssistantMessage 
+}: ChatMessageProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [reaction, setReaction] = useState<"up" | "down" | null>(null);
   const [isPinned, setIsPinned] = useState(message.isPinned || false);
+  const [isTransforming, setIsTransforming] = useState(false);
+  const [currentTransform, setCurrentTransform] = useState<TransformType | null>(null);
+  const [showTransformBadge, setShowTransformBadge] = useState(false);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -76,6 +92,21 @@ export function ChatMessage({ message, onPin, onBranch, onRegenerate, onEdit, on
     onDelete?.(message.id);
   };
 
+  const handleTransform = useCallback((type: TransformType) => {
+    setIsTransforming(true);
+    setCurrentTransform(type);
+    
+    // Simulate transformation
+    setTimeout(() => {
+      setIsTransforming(false);
+      setShowTransformBadge(true);
+      onTransform?.(message.id, type);
+      
+      // Hide badge after 3 seconds
+      setTimeout(() => setShowTransformBadge(false), 3000);
+    }, 800);
+  }, [message.id, onTransform]);
+
   const isUser = message.role === "user";
 
   return (
@@ -96,12 +127,22 @@ export function ChatMessage({ message, onPin, onBranch, onRegenerate, onEdit, on
       )}
 
       <div className={cn("flex flex-col max-w-[75%]", isUser ? "items-end" : "items-start")}>
+        {/* Mode badge for assistant messages */}
+        {!isUser && message.responseMode && message.responseMode !== "auto" && (
+          <ModeBadge mode={message.responseMode} className="mb-1" />
+        )}
+        
         {/* Pin indicator */}
         {isPinned && (
           <div className="flex items-center gap-1 text-[10px] text-accent mb-1 px-1">
             <Pin className="h-2.5 w-2.5 fill-current" />
             <span className="font-medium">Pinned</span>
           </div>
+        )}
+
+        {/* Transform Badge */}
+        {!isUser && (
+          <TransformBadge type={currentTransform} visible={showTransformBadge} />
         )}
 
         {/* Message Bubble */}
@@ -112,12 +153,23 @@ export function ChatMessage({ message, onPin, onBranch, onRegenerate, onEdit, on
               ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
               : "bg-card border border-border/80 text-foreground shadow-card hover:shadow-lg hover:border-border",
             isPinned && !isUser && "ring-2 ring-accent/30 border-accent/40",
-            message.status === "streaming" && !isUser && "streaming-glow"
+            message.status === "streaming" && !isUser && "streaming-glow",
+            isTransforming && "opacity-70"
           )}
         >
           {/* Subtle glow for user messages */}
           {isUser && (
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+          )}
+          
+          {/* Loading overlay for transforms */}
+          {isTransforming && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-2xl">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Transforming...</span>
+              </div>
+            </div>
           )}
           
           <div className="relative text-sm whitespace-pre-wrap leading-relaxed">
@@ -141,6 +193,18 @@ export function ChatMessage({ message, onPin, onBranch, onRegenerate, onEdit, on
         >
           {message.timestamp}
         </span>
+
+        {/* Response Transform Toolbar (Assistant only, on hover or always for last message) */}
+        {!isUser && message.status === "complete" && (
+          <div className="mt-2">
+            <ResponseTransformToolbar
+              onTransform={handleTransform}
+              isTransforming={isTransforming}
+              currentTransform={currentTransform}
+              alwaysVisible={isLastAssistantMessage}
+            />
+          </div>
+        )}
 
         {/* Message Actions */}
         {message.status === "complete" && (
