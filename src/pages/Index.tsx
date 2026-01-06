@@ -1,114 +1,39 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Layers, Lightbulb, BookOpen, PenTool, Target, Code, BarChart3, CheckSquare } from "lucide-react";
-import { TopBar } from "@/components/TopBar";
-import { LeftRail } from "@/components/LeftRail";
-import { WorkspaceCard, NewWorkspaceCard, Workspace } from "@/components/WorkspaceCard";
-import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
-import { useToast } from "@/hooks/use-toast";
-// Sample data
-const recentWorkspaces: Workspace[] = [
+import { Search, User } from "lucide-react";
+import { ConversationalEntry } from "@/components/ConversationalEntry";
+
+// Sample recent workspaces data
+const recentWorkspaces = [
   {
     id: "1",
     title: "Q1 Product Strategy",
-    lastActive: "Active 3 hours ago",
-    tags: ["Strategy", "Planning"],
-    artifacts: [
-      { type: "target", icon: Target },
-      { type: "chart", icon: BarChart3 },
-      { type: "checklist", icon: CheckSquare },
-    ],
+    lastActive: "3 hours ago",
+    preview: "Let's break down the key priorities for Q1...",
   },
   {
     id: "2",
     title: "Series A Pitch Deck",
-    lastActive: "Active yesterday",
-    tags: ["Pitch"],
-    artifacts: [
-      { type: "design", icon: PenTool },
-      { type: "chart", icon: BarChart3 },
-    ],
+    lastActive: "Yesterday",
+    preview: "Here's my analysis of your pitch structure...",
   },
   {
     id: "3",
     title: "API Architecture Review",
-    lastActive: "Active 2 days ago",
-    tags: ["Architecture"],
-    artifacts: [
-      { type: "code", icon: Code },
-      { type: "diagram", icon: Layers },
-    ],
+    lastActive: "2 days ago",
+    preview: "The core challenge is finding the right balance...",
   },
   {
     id: "4",
     title: "User Research: Onboarding",
-    lastActive: "Active 3 days ago",
-    tags: ["Research", "Design"],
-    artifacts: [
-      { type: "book", icon: BookOpen },
-      { type: "idea", icon: Lightbulb },
-      { type: "doc", icon: FileText },
-    ],
-  },
-  {
-    id: "5",
-    title: "Competitor Analysis 2024",
-    lastActive: "Active 5 days ago",
-    tags: ["Research", "Strategy"],
-    artifacts: [
-      { type: "chart", icon: BarChart3 },
-      { type: "book", icon: BookOpen },
-    ],
-  },
-];
-
-const allWorkspaces: Workspace[] = [
-  ...recentWorkspaces,
-  {
-    id: "6",
-    title: "Brand Guidelines v2",
-    lastActive: "Active 1 week ago",
-    tags: ["Design"],
-    artifacts: [
-      { type: "design", icon: PenTool },
-    ],
-  },
-  {
-    id: "7",
-    title: "Team Retrospective Notes",
-    lastActive: "Active 2 weeks ago",
-    tags: ["Planning"],
-    artifacts: [
-      { type: "checklist", icon: CheckSquare },
-      { type: "idea", icon: Lightbulb },
-    ],
-  },
-  {
-    id: "8",
-    title: "Feature Prioritization",
-    lastActive: "Active 2 weeks ago",
-    tags: ["Strategy", "Planning"],
-    artifacts: [
-      { type: "target", icon: Target },
-      { type: "diagram", icon: Layers },
-      { type: "code", icon: Code },
-    ],
+    lastActive: "3 days ago",
+    preview: "Based on the user interviews, I see patterns...",
   },
 ];
 
 export default function Index() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState("home");
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const handleNavClick = (id: string) => {
-    setActiveNav(id);
-    if (id === "recent") navigate("/recent");
-    else if (id === "templates") navigate("/templates");
-    else if (id === "library") navigate("/library");
-    else if (id === "settings") navigate("/settings");
-  };
   // Keyboard shortcut for search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -123,91 +48,45 @@ export default function Index() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const handleCreateWorkspace = (type: string) => {
-    setIsModalOpen(false);
-    const newId = `new-${Date.now()}`;
-    toast({
-      title: "Workspace created",
-      description: `Your new ${type} workspace is ready.`,
-    });
-    navigate(`/workspace/${newId}?type=${type}`);
-  };
-
-  const handleWorkspaceClick = (workspace: Workspace) => {
-    navigate(`/workspace/${workspace.id}`);
-  };
-
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <TopBar onNewWorkspace={() => setIsModalOpen(true)} />
-      
-      <div className="flex flex-1 overflow-hidden">
-        <LeftRail activeItem={activeNav} onItemClick={handleNavClick} />
-        
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto px-6 py-8">
-            {/* Header */}
-            <div className="mb-8 animate-fade-up">
-              <h1 className="text-2xl font-semibold text-foreground tracking-tight">
-                Workspaces
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Pick up where you left off.
-              </p>
-            </div>
+      {/* Minimal Top Bar */}
+      <header className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-sm flex items-center justify-between px-6 shrink-0">
+        {/* Left: Wordmark */}
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-semibold tracking-tight text-foreground">
+            Trojan
+          </span>
+        </div>
 
-            {/* Recent Workspaces */}
-            <section className="mb-10 animate-fade-up" style={{ animationDelay: "50ms" }}>
-              <h2 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider">
-                Recent
-              </h2>
-              <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide">
-                {recentWorkspaces.slice(0, 6).map((workspace, index) => (
-                  <div 
-                    key={workspace.id}
-                    className="animate-slide-in-left"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <WorkspaceCard 
-                      workspace={workspace} 
-                      variant="compact" 
-                      onClick={() => handleWorkspaceClick(workspace)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* All Workspaces */}
-            <section className="animate-fade-up" style={{ animationDelay: "100ms" }}>
-              <h2 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider">
-                All Workspaces
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* New Workspace CTA */}
-                <NewWorkspaceCard onClick={() => setIsModalOpen(true)} variant="large" />
-                
-                {/* Workspace Cards */}
-                {allWorkspaces.map((workspace, index) => (
-                  <div 
-                    key={workspace.id}
-                    className="animate-fade-up"
-                    style={{ animationDelay: `${(index + 1) * 50}ms` }}
-                  >
-                    <WorkspaceCard workspace={workspace} onClick={() => handleWorkspaceClick(workspace)} />
-                  </div>
-                ))}
-              </div>
-            </section>
+        {/* Center: Search (compact) */}
+        <div className="hidden sm:flex flex-1 max-w-sm mx-8">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search..."
+              className="w-full h-9 pl-9 pr-4 bg-muted/50 rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-muted transition-all duration-150"
+            />
+            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-5 items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+              ⌘K
+            </kbd>
           </div>
-        </main>
-      </div>
+        </div>
 
-      <NewWorkspaceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onCreate={handleCreateWorkspace}
-      />
+        {/* Right: Avatar */}
+        <button className="h-8 w-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors duration-150">
+          <User className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </header>
+      
+      {/* Main Content - Conversational Entry */}
+      <main className="flex-1">
+        <ConversationalEntry 
+          userName="there" 
+          recentWorkspaces={recentWorkspaces}
+        />
+      </main>
     </div>
   );
 }

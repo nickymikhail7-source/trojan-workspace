@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Sparkles, Edit2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { TopBar } from "@/components/TopBar";
 import { LeftRail } from "@/components/LeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
@@ -11,20 +12,40 @@ import {
   ChatComposer,
   ChatEmptyState,
   ThinkingIndicator,
-  ChatSidebar,
   type Message,
   type ChatComposerRef,
-  type Branch,
 } from "@/components/chat";
+import { WorkspaceSidebar, type Branch, type ContextFile } from "@/components/workspace/WorkspaceSidebar";
+
+// Sample workspace names for existing workspaces
+const existingWorkspaceNames: Record<string, string> = {
+  "1": "Q1 Product Strategy",
+  "2": "Series A Pitch Deck",
+  "3": "API Architecture Review",
+  "4": "User Research: Onboarding",
+  "5": "Competitor Analysis 2024",
+  "6": "Brand Guidelines v2",
+  "7": "Team Retrospective Notes",
+  "8": "Feature Prioritization",
+};
 
 export default function BranchView() {
   const { id: workspaceId, branchId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const composerRef = useRef<ChatComposerRef>(null);
 
+  const isNewWorkspace = workspaceId?.startsWith("new-");
+  const initialPrompt = searchParams.get("prompt");
+
+  const [workspaceName, setWorkspaceName] = useState(() => {
+    if (isNewWorkspace) return "Untitled Workspace";
+    return existingWorkspaceNames[workspaceId || "1"] || "Workspace";
+  });
+  const [isEditingName, setIsEditingName] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -34,7 +55,29 @@ export default function BranchView() {
   const [pendingBranchMessageId, setPendingBranchMessageId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set());
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([
+    {
+      id: "main",
+      name: "Main",
+      messageId: "",
+      createdAt: "Now",
+      preview: "Primary conversation thread",
+      isActive: branchId === "main",
+    },
+  ]);
+  const [contextFiles, setContextFiles] = useState<ContextFile[]>([]);
+  const [memoryEnabled, setMemoryEnabled] = useState(true);
+
+  // Handle initial prompt from URL
+  useEffect(() => {
+    if (initialPrompt && messages.length === 0) {
+      handleSendMessage(initialPrompt);
+      // Clear the prompt from URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("prompt");
+      navigate(`/workspace/${workspaceId}/branch/${branchId}`, { replace: true });
+    }
+  }, [initialPrompt]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,7 +103,17 @@ export default function BranchView() {
       title: "Workspace created",
       description: `Your new ${type} workspace is ready.`,
     });
-    navigate(`/workspace/${newId}?type=${type}`);
+    navigate(`/workspace/${newId}/branch/main`);
+  };
+
+  const handleNameSave = () => {
+    setIsEditingName(false);
+    if (workspaceName.trim() === "") {
+      setWorkspaceName("Untitled Workspace");
+    }
+    toast({
+      description: `Workspace renamed to "${workspaceName}"`,
+    });
   };
 
   const handleSendMessage = (value?: string, mode?: string) => {
@@ -79,7 +132,6 @@ export default function BranchView() {
     setInputValue("");
     setIsStreaming(true);
 
-    // Simulate AI response
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       role: "assistant",
@@ -91,7 +143,6 @@ export default function BranchView() {
 
     setMessages((prev) => [...prev, aiMessage]);
 
-    // Simulate streaming response
     const responseText = getSimulatedResponse(messageContent);
     let currentIndex = 0;
 
@@ -131,7 +182,6 @@ export default function BranchView() {
     composerRef.current?.focus();
   };
 
-  // Pin/Unpin message handler
   const handlePinMessage = useCallback((messageId: string) => {
     setPinnedMessageIds((prev) => {
       const newSet = new Set(prev);
@@ -144,13 +194,11 @@ export default function BranchView() {
     });
   }, []);
 
-  // Branch from message handler - opens modal
   const handleBranchMessage = useCallback((messageId: string) => {
     setPendingBranchMessageId(messageId);
     setIsBranchModalOpen(true);
   }, []);
 
-  // Create branch with name from modal
   const handleCreateBranch = useCallback((name: string) => {
     if (!pendingBranchMessageId) return;
     
@@ -173,7 +221,6 @@ export default function BranchView() {
     });
   }, [pendingBranchMessageId, messages, toast]);
 
-  // Scroll to pinned message
   const handlePinnedMessageClick = useCallback((messageId: string) => {
     const element = messageRefs.current.get(messageId);
     if (element) {
@@ -184,18 +231,14 @@ export default function BranchView() {
     setIsSidebarOpen(false);
   }, []);
 
-  // Navigate to branch
   const handleBranchClick = useCallback((branchIdToNav: string) => {
-    toast({
-      title: "Opening branch",
-      description: "Navigating to the branched conversation...",
-    });
+    setBranches((prev) =>
+      prev.map((b) => ({ ...b, isActive: b.id === branchIdToNav }))
+    );
     setIsSidebarOpen(false);
-    // In a real app, this would navigate to the branch
     navigate(`/workspace/${workspaceId}/branch/${branchIdToNav}`);
-  }, [navigate, workspaceId, toast]);
+  }, [navigate, workspaceId]);
 
-  // Delete branch
   const handleDeleteBranch = useCallback((branchIdToDelete: string) => {
     setBranches((prev) => prev.filter((b) => b.id !== branchIdToDelete));
     toast({
@@ -203,13 +246,10 @@ export default function BranchView() {
     });
   }, [toast]);
 
-  // Regenerate last assistant message
   const handleRegenerateMessage = useCallback((messageId: string) => {
-    // Find the user message that preceded this assistant message
     const messageIndex = messages.findIndex((m) => m.id === messageId);
     if (messageIndex === -1) return;
 
-    // Find the preceding user message
     let userMessageContent = "";
     for (let i = messageIndex - 1; i >= 0; i--) {
       if (messages[i].role === "user") {
@@ -218,11 +258,9 @@ export default function BranchView() {
       }
     }
 
-    // Remove the assistant message and regenerate
     setMessages((prev) => prev.filter((m) => m.id !== messageId));
     setIsStreaming(true);
 
-    // Create new AI response
     const aiMessage: Message = {
       id: Date.now().toString(),
       role: "assistant",
@@ -233,7 +271,6 @@ export default function BranchView() {
 
     setMessages((prev) => [...prev, aiMessage]);
 
-    // Simulate streaming response
     const responseText = getSimulatedResponse(userMessageContent);
     let currentIndex = 0;
 
@@ -259,10 +296,18 @@ export default function BranchView() {
     }, 20);
   }, [messages]);
 
-  // Get pinned messages
-  const pinnedMessages = messages.filter((m) => pinnedMessageIds.has(m.id));
+  const handleUploadFile = () => {
+    toast({
+      title: "Coming soon",
+      description: "File upload will be available in a future update.",
+    });
+  };
 
-  // Find last assistant message id
+  const handleRemoveFile = (fileId: string) => {
+    setContextFiles((prev) => prev.filter((f) => f.id !== fileId));
+  };
+
+  const pinnedMessages = messages.filter((m) => pinnedMessageIds.has(m.id));
   const lastAssistantMessageId = [...messages].reverse().find((m) => m.role === "assistant" && m.status === "complete")?.id;
 
   const getSimulatedResponse = (input: string): string => {
@@ -274,7 +319,6 @@ export default function BranchView() {
     return responses[Math.floor(Math.random() * responses.length)];
   };
 
-  // Check if currently streaming (for thinking indicator)
   const showThinking = isStreaming && messages.some(m => m.status === "streaming" && m.content === "");
 
   return (
@@ -285,21 +329,47 @@ export default function BranchView() {
         <LeftRail activeItem={activeNav} onItemClick={handleNavClick} />
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Compact Branch Header */}
+          {/* Enhanced Branch Header */}
           <div className="border-b border-border bg-card/50 px-4 py-2 shrink-0 flex items-center gap-3">
             <button
-              onClick={() => navigate(`/workspace/${workspaceId}`)}
+              onClick={() => navigate("/")}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back</span>
+              <span>Home</span>
             </button>
             <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-2">
-              <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
+            
+            {/* Workspace Name */}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                 <Sparkles className="h-3 w-3 text-primary" />
               </div>
-              <span className="text-sm font-medium text-foreground">Branch {branchId?.slice(-4)}</span>
+              
+              {isEditingName ? (
+                <Input
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceName(e.target.value)}
+                  onBlur={handleNameSave}
+                  onKeyDown={(e) => e.key === "Enter" && handleNameSave()}
+                  className="h-7 text-sm w-64"
+                  autoFocus
+                />
+              ) : (
+                <button
+                  onClick={() => setIsEditingName(true)}
+                  className="flex items-center gap-2 group"
+                >
+                  <span className="text-sm font-medium text-foreground truncate max-w-[200px]">
+                    {workspaceName}
+                  </span>
+                  <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              )}
+              
+              <span className="text-xs text-muted-foreground">
+                / {branches.find(b => b.id === branchId)?.name || "Main"}
+              </span>
             </div>
           </div>
 
@@ -326,7 +396,6 @@ export default function BranchView() {
                   </div>
                 ))}
                 
-                {/* Thinking Indicator */}
                 {showThinking && (
                   <div className="pt-2">
                     <ThinkingIndicator />
@@ -355,16 +424,22 @@ export default function BranchView() {
         </main>
       </div>
 
-      {/* Chat Sidebar */}
-      <ChatSidebar
+      {/* Workspace Sidebar */}
+      <WorkspaceSidebar
         isOpen={isSidebarOpen}
         onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         pinnedMessages={pinnedMessages}
         branches={branches}
+        contextFiles={contextFiles}
+        memoryEnabled={memoryEnabled}
+        onMemoryToggle={() => setMemoryEnabled(!memoryEnabled)}
         onPinnedMessageClick={handlePinnedMessageClick}
         onBranchClick={handleBranchClick}
         onUnpin={handlePinMessage}
         onDeleteBranch={handleDeleteBranch}
+        onNewBranch={() => setIsBranchModalOpen(true)}
+        onUploadFile={handleUploadFile}
+        onRemoveFile={handleRemoveFile}
       />
 
       <NewWorkspaceModal
