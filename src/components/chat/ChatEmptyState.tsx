@@ -1,5 +1,6 @@
-import { Sparkles, FileText, Lightbulb, MessageSquare, Zap, ArrowRight } from "lucide-react";
+import { FileText, Lightbulb, MessageSquare, Zap, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrojanLogo } from "@/components/TrojanLogo";
 
 interface StarterPrompt {
   icon: React.ElementType;
@@ -48,16 +49,11 @@ export function ChatEmptyState({ onPromptClick }: ChatEmptyStateProps) {
         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Icon */}
+      {/* Trojan Logo */}
       <div className="relative mb-8">
-        <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 flex items-center justify-center ring-1 ring-primary/20 shadow-xl shadow-primary/10">
-          <Sparkles className="h-10 w-10 text-primary" />
-        </div>
-        <div className="absolute -bottom-2 -right-2 h-7 w-7 rounded-xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center ring-4 ring-background shadow-lg">
-          <span className="text-[10px] text-accent-foreground font-bold">AI</span>
-        </div>
+        <TrojanLogo size="lg" showText={false} className="scale-150" />
         {/* Pulse rings */}
-        <div className="absolute inset-0 rounded-2xl animate-ping opacity-20 bg-primary/20" style={{ animationDuration: '3s' }} />
+        <div className="absolute inset-0 rounded-full animate-ping opacity-20 bg-primary/20" style={{ animationDuration: '3s' }} />
       </div>
 
       {/* Title & Subtitle */}
