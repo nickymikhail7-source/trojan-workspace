@@ -1,14 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Target, 
-  Bug, 
-  PenTool, 
-  FileText, 
-  ArrowUp,
-  Sparkles,
-  Paperclip
-} from "lucide-react";
+import { Target, Bug, PenTool, FileText, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ConversationalEntryProps {
@@ -84,32 +76,28 @@ export function ConversationalEntry({
   };
 
   return (
-    <div className="min-h-full flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-full max-w-2xl animate-fade-up">
-        {/* Greeting */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 mb-4">
-            <Sparkles className="h-6 w-6 text-accent" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+    <div className="min-h-full flex flex-col items-center justify-center px-6 py-8">
+      <div className="w-full max-w-xl animate-fade-up">
+        {/* Minimal Greeting */}
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-medium text-foreground tracking-tight">
             {greeting}, {userName}
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-0.5">
             What would you like to work on?
           </p>
         </div>
 
-        {/* Enhanced Chat Input */}
+        {/* Compact Chat Input */}
         <div
           className={cn(
-            "relative rounded-2xl border-2 bg-card transition-all duration-300",
+            "relative rounded-xl border bg-card transition-all duration-200",
             isFocused
-              ? "border-accent shadow-xl shadow-accent/10"
-              : "border-border/60 shadow-lg shadow-black/5 hover:border-border"
+              ? "border-accent/60 shadow-sm"
+              : "border-border hover:border-border/80"
           )}
         >
-          {/* Input Area */}
-          <div className="p-4 pb-14">
+          <div className="flex items-end gap-2 p-3">
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -117,55 +105,40 @@ export function ConversationalEntry({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask me anything..."
-              rows={2}
+              placeholder="Ask anything..."
+              rows={1}
               className={cn(
-                "w-full resize-none bg-transparent text-foreground",
-                "placeholder:text-muted-foreground focus:outline-none",
-                "text-base sm:text-lg leading-relaxed"
+                "flex-1 resize-none bg-transparent text-foreground",
+                "placeholder:text-muted-foreground/60 focus:outline-none",
+                "text-sm leading-relaxed min-h-[24px] max-h-[120px]"
               )}
             />
-          </div>
-          
-          {/* Bottom Bar */}
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 py-3 border-t border-border/50">
-            {/* Attachment Button */}
-            <button
-              type="button"
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-            >
-              <Paperclip className="h-4 w-4" />
-            </button>
-            
-            {/* Send Button */}
             <button
               onClick={handleSubmit}
               disabled={!inputValue.trim()}
               className={cn(
-                "h-9 px-4 rounded-xl flex items-center gap-2 font-medium text-sm transition-all duration-200",
+                "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
                 inputValue.trim()
-                  ? "bg-accent text-accent-foreground hover:bg-accent/90 shadow-md shadow-accent/20"
-                  : "bg-secondary text-muted-foreground cursor-not-allowed"
+                  ? "bg-foreground text-background hover:bg-foreground/90"
+                  : "bg-secondary text-muted-foreground/50"
               )}
             >
-              <span>Send</span>
               <ArrowUp className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* Quick Actions - Compact Pills Below */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          <span className="text-xs text-muted-foreground mr-1">Try:</span>
+        {/* Quick Actions - Compact Pills */}
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
               <button
                 key={action.id}
                 onClick={() => handleQuickAction(action)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-secondary hover:border-accent/30 text-sm text-muted-foreground hover:text-foreground transition-all duration-150"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-3 w-3" />
                 <span>{action.label}</span>
               </button>
             );
