@@ -75,7 +75,11 @@ export default function Index() {
       
       {/* Main Content - Conversational Entry */}
       <main className="flex-1 overflow-y-auto">
-        <ConversationalEntry userName="there" />
+        <ConversationalEntry 
+          userName="there" 
+          greeting={getGreeting()}
+          recentWorkspaces={recentWorkspaces}
+        />
       </main>
 
       <NewWorkspaceModal
