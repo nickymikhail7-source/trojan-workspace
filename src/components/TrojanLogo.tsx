@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Hexagon } from "lucide-react";
 
 interface TrojanLogoProps {
   className?: string;
@@ -13,6 +14,18 @@ export function TrojanLogo({ className, showText = true, size = "md" }: TrojanLo
     lg: "h-10 w-10",
   };
 
+  const iconSizes = {
+    sm: "h-6 w-6",
+    md: "h-8 w-8",
+    lg: "h-10 w-10",
+  };
+
+  const textSizes = {
+    sm: "text-[10px]",
+    md: "text-xs",
+    lg: "text-sm",
+  };
+
   const textSizeClasses = {
     sm: "text-base",
     md: "text-lg",
@@ -21,26 +34,18 @@ export function TrojanLogo({ className, showText = true, size = "md" }: TrojanLo
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {/* Custom Trojan Shield Icon */}
-      <div className={cn(
-        "relative flex items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80",
-        sizeClasses[size]
-      )}>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          className="h-[60%] w-[60%] text-primary-foreground"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          {/* Shield shape with T */}
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="currentColor" opacity="0.2" />
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          {/* T letter inside */}
-          <path d="M8 8h8M12 8v8" strokeWidth="2.5" />
-        </svg>
+      {/* Hex T Icon */}
+      <div className={cn("relative flex items-center justify-center", sizeClasses[size])}>
+        <Hexagon 
+          className={cn("text-foreground", iconSizes[size])} 
+          strokeWidth={1.5} 
+        />
+        <span className={cn(
+          "absolute inset-0 flex items-center justify-center font-bold text-foreground",
+          textSizes[size]
+        )}>
+          T
+        </span>
       </div>
       
       {showText && (
