@@ -8,6 +8,7 @@ import Recent from "./pages/Recent";
 import Templates from "./pages/Templates";
 import Library from "./pages/Library";
 import Settings from "./pages/Settings";
+import Workspaces from "./pages/Workspaces";
 import Activity from "./pages/Activity";
 import WorkspaceInterior from "./pages/WorkspaceInterior";
 import BranchView from "./pages/BranchView";
@@ -23,6 +24,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/workspaces" element={<Workspaces />} />
           <Route path="/recent" element={<Recent />} />
           <Route path="/templates" element={<Templates />} />
           <Route path="/library" element={<Library />} />
