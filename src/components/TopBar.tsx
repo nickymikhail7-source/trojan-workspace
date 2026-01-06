@@ -1,6 +1,5 @@
 import { Search, Plus, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TrojanLogo } from "./TrojanLogo";
 
 interface TopBarProps {
   onNewWorkspace: () => void;
@@ -9,8 +8,12 @@ interface TopBarProps {
 export function TopBar({ onNewWorkspace }: TopBarProps) {
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 shrink-0">
-      {/* Left: Logo */}
-      <TrojanLogo size="sm" />
+      {/* Left: Wordmark */}
+      <div className="flex items-center gap-2">
+        <span className="text-lg font-semibold tracking-tight text-foreground">
+          Trojan
+        </span>
+      </div>
 
       {/* Center: Global Search */}
       <div className="flex-1 max-w-md mx-8">
