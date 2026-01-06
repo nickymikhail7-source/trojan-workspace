@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, User } from "lucide-react";
 import { ConversationalEntry } from "@/components/ConversationalEntry";
+import { CollapsibleLeftRail } from "@/components/CollapsibleLeftRail";
+import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
+import { useToast } from "@/hooks/use-toast";
 
 // Sample recent workspaces data
 const recentWorkspaces = [
@@ -33,6 +35,16 @@ const recentWorkspaces = [
 
 export default function Index() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -48,45 +60,33 @@ export default function Index() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  const handleCreateWorkspace = (type: string) => {
+    setIsModalOpen(false);
+    toast({
+      title: "Workspace created",
+      description: `Your new ${type} workspace is ready.`,
+    });
+    navigate("/workspace/new");
+  };
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Minimal Top Bar */}
-      <header className="h-14 border-b border-border/50 bg-background/80 backdrop-blur-sm flex items-center justify-between px-6 shrink-0">
-        {/* Left: Wordmark */}
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold tracking-tight text-foreground">
-            Trojan
-          </span>
-        </div>
-
-        {/* Center: Search (compact) */}
-        <div className="hidden sm:flex flex-1 max-w-sm mx-8">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full h-9 pl-9 pr-4 bg-muted/50 rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-muted transition-all duration-150"
-            />
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden lg:inline-flex h-5 items-center gap-1 rounded border border-border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              ⌘K
-            </kbd>
-          </div>
-        </div>
-
-        {/* Right: Avatar */}
-        <button className="h-8 w-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors duration-150">
-          <User className="h-4 w-4 text-muted-foreground" />
-        </button>
-      </header>
+    <div className="min-h-screen bg-background flex">
+      <CollapsibleLeftRail onNewWorkspace={() => setIsModalOpen(true)} />
       
       {/* Main Content - Conversational Entry */}
-      <main className="flex-1">
+      <main className="flex-1 overflow-y-auto">
         <ConversationalEntry 
           userName="there" 
+          greeting={getGreeting()}
           recentWorkspaces={recentWorkspaces}
         />
       </main>
+
+      <NewWorkspaceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={handleCreateWorkspace}
+      />
     </div>
   );
 }

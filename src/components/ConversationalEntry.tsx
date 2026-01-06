@@ -24,6 +24,7 @@ interface Workspace {
 
 interface ConversationalEntryProps {
   userName?: string;
+  greeting?: string;
   recentWorkspaces: Workspace[];
 }
 
@@ -60,6 +61,7 @@ const quickActions = [
 
 export function ConversationalEntry({ 
   userName = "there", 
+  greeting = "Hey",
   recentWorkspaces 
 }: ConversationalEntryProps) {
   const [inputValue, setInputValue] = useState("");
@@ -116,7 +118,7 @@ export function ConversationalEntry({
             <Sparkles className="h-7 w-7 text-primary" />
           </div>
           <h1 className="text-3xl font-semibold text-foreground tracking-tight">
-            Hey {userName}, what are we working on today?
+            {greeting}, {userName}. What are we working on today?
           </h1>
           <p className="text-muted-foreground text-base">
             Start with a quick action or tell me what's on your mind.
