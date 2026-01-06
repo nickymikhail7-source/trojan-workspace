@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Target, Bug, PenTool, FileText, ArrowUp } from "lucide-react";
+import { Target, Bug, PenTool, Search, ArrowUp, Paperclip, Globe, LayoutTemplate, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrojanLogo } from "./TrojanLogo";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ConversationalEntryProps {
   userName?: string;
-  greeting?: string;
-  recentWorkspaces?: Array<{ id: string; title: string; lastActive: string; preview?: string }>;
 }
 
 const quickActions = [
@@ -29,17 +29,20 @@ const quickActions = [
     prompt: "Help me write professional content.",
   },
   {
-    id: "review",
-    icon: FileText,
-    label: "Review docs",
-    prompt: "I'd like you to review and help me improve a document.",
+    id: "research",
+    icon: Search,
+    label: "Research",
+    prompt: "Help me research and analyze a topic in depth.",
   },
 ];
 
-export function ConversationalEntry({ 
-  userName = "there", 
-  greeting = "Hey",
-}: ConversationalEntryProps) {
+const toolbarActions = [
+  { id: "attach", icon: Paperclip, tooltip: "Attach file" },
+  { id: "web", icon: Globe, tooltip: "Search web" },
+  { id: "templates", icon: LayoutTemplate, tooltip: "Templates" },
+];
+
+export function ConversationalEntry({ userName }: ConversationalEntryProps) {
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -76,28 +79,29 @@ export function ConversationalEntry({
   };
 
   return (
-    <div className="min-h-full flex flex-col items-center justify-center px-6 py-8">
-      <div className="w-full max-w-xl animate-fade-up">
-        {/* Minimal Greeting */}
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-medium text-foreground tracking-tight">
-            {greeting}, {userName}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            What would you like to work on?
-          </p>
+    <div className="min-h-full flex flex-col items-center justify-center px-6 py-12">
+      <div className="w-full max-w-2xl animate-fade-up">
+        {/* Trojan Logo */}
+        <div className="flex justify-center mb-6">
+          <TrojanLogo size="lg" showText={false} />
         </div>
 
-        {/* Compact Chat Input */}
+        {/* Single Bold Headline */}
+        <h1 className="text-2xl font-semibold text-foreground text-center mb-8">
+          What are we thinking about?
+        </h1>
+
+        {/* Two-Row Input Box */}
         <div
           className={cn(
-            "relative rounded-xl border bg-card transition-all duration-200",
+            "rounded-2xl border bg-card transition-all duration-200 shadow-sm",
             isFocused
-              ? "border-accent/60 shadow-sm"
+              ? "border-accent/60 shadow-md"
               : "border-border hover:border-border/80"
           )}
         >
-          <div className="flex items-end gap-2 p-3">
+          {/* Textarea Section */}
+          <div className="p-4 pb-0">
             <textarea
               ref={inputRef}
               value={inputValue}
@@ -105,44 +109,76 @@ export function ConversationalEntry({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask anything..."
-              rows={1}
+              placeholder="Message Trojan..."
+              rows={2}
               className={cn(
-                "flex-1 resize-none bg-transparent text-foreground",
+                "w-full resize-none bg-transparent text-foreground",
                 "placeholder:text-muted-foreground/60 focus:outline-none",
-                "text-sm leading-relaxed min-h-[24px] max-h-[120px]"
+                "text-base leading-relaxed min-h-[56px] max-h-[160px]"
               )}
             />
+          </div>
+
+          {/* Toolbar Section */}
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border/50">
+            {/* Left: Tool Icons */}
+            <div className="flex items-center gap-1">
+              {toolbarActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Tooltip key={action.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="h-9 w-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                      >
+                        <Icon className="h-5 w-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      {action.tooltip}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
+            {/* Right: Send Button */}
             <button
               onClick={handleSubmit}
               disabled={!inputValue.trim()}
               className={cn(
-                "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                "h-10 w-10 rounded-full flex items-center justify-center transition-all duration-200",
                 inputValue.trim()
-                  ? "bg-foreground text-background hover:bg-foreground/90"
+                  ? "bg-foreground text-background hover:bg-foreground/90 shadow-sm"
                   : "bg-secondary text-muted-foreground/50"
               )}
             >
-              <ArrowUp className="h-4 w-4" />
+              <ArrowUp className="h-5 w-5" />
             </button>
           </div>
         </div>
 
-        {/* Quick Actions - Compact Pills */}
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+        {/* Bordered Pill Quick Actions */}
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           {quickActions.map((action) => {
             const Icon = action.icon;
             return (
               <button
                 key={action.id}
                 onClick={() => handleQuickAction(action)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary hover:border-border/80 transition-colors"
               >
-                <Icon className="h-3 w-3" />
+                <Icon className="h-4 w-4" />
                 <span>{action.label}</span>
               </button>
             );
           })}
+          <button
+            className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-secondary hover:border-border/80 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>
