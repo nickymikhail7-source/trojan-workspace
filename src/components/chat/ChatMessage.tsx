@@ -7,7 +7,8 @@ import {
   Sparkles, 
   Pencil, 
   GitBranch, 
-  RefreshCw, 
+  RefreshCw,
+  Pin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ export interface Message {
 interface ChatMessageProps {
   message: Message;
   onEdit?: (messageId: string) => void;
+  onPin?: (messageId: string) => void;
   onBranch?: (messageId: string) => void;
   onRegenerate?: (messageId: string) => void;
   isLastAssistantMessage?: boolean;
@@ -36,6 +38,7 @@ interface ChatMessageProps {
 export function ChatMessage({ 
   message, 
   onEdit, 
+  onPin,
   onBranch, 
   onRegenerate, 
   isLastAssistantMessage 
@@ -57,6 +60,10 @@ export function ChatMessage({
 
   const handleEdit = () => {
     onEdit?.(message.id);
+  };
+
+  const handlePin = () => {
+    onPin?.(message.id);
   };
 
   const handleBranch = () => {
@@ -161,20 +168,36 @@ export function ChatMessage({
                 <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
               </Tooltip>
 
-              {/* Edit */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    onClick={handleEdit}
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
-              </Tooltip>
+              {/* Pin for user messages, Edit for AI messages */}
+              {isUser ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      onClick={handlePin}
+                    >
+                      <Pin className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">Pin</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      onClick={handleEdit}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
+                </Tooltip>
+              )}
 
               {/* Branch (assistant only) */}
               {!isUser && (

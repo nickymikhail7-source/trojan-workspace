@@ -75,10 +75,15 @@ export default function BranchView() {
         // fallback
       }
     }
+    // Get workspace name for the main branch
+    const savedWorkspaces = JSON.parse(localStorage.getItem("trojan-workspaces") || "[]");
+    const savedWorkspace = savedWorkspaces.find((w: any) => w.id === workspaceId);
+    const wsName = savedWorkspace?.title || "Workspace";
+    
     return [
       {
         id: "main",
-        name: "Main",
+        name: wsName,
         messageId: "",
         createdAt: "Now",
         preview: "Primary conversation thread",
@@ -610,6 +615,7 @@ export default function BranchView() {
                     <ChatMessage
                       message={{ ...message, isPinned: pinnedMessageIds.has(message.id) }}
                       onEdit={() => {}}
+                      onPin={handlePinMessage}
                       onBranch={handleBranchMessage}
                       onRegenerate={handleRegenerateMessage}
                       isLastAssistantMessage={message.id === lastAssistantMessageId}
