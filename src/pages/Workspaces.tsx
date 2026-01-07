@@ -90,7 +90,8 @@ export default function Workspaces() {
   }, []);
 
   const handleWorkspaceClick = (workspace: Workspace) => {
-    navigate(`/workspace/${workspace.id}`);
+    // Navigate directly to main branch of the workspace
+    navigate(`/workspace/${workspace.id}/branch/main`);
   };
 
   const handleCreateWorkspace = (type: string) => {

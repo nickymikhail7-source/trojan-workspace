@@ -312,6 +312,14 @@ export default function BranchView() {
 
     const newBranchId = `branch-${Date.now()}`;
 
+    // Copy messages up to and including the branched message
+    const messageIndex = messages.findIndex((m) => m.id === pendingBranchMessageId);
+    const messagesToCopy = messages.slice(0, messageIndex + 1);
+    
+    // Save copied messages to the new branch's storage
+    const newBranchStorageKey = `trojan-messages-${workspaceId}-${newBranchId}`;
+    localStorage.setItem(newBranchStorageKey, JSON.stringify(messagesToCopy));
+
     const newBranch: Branch = {
       id: newBranchId,
       name,
@@ -332,7 +340,7 @@ export default function BranchView() {
 
     toast({
       title: "Branch created",
-      description: `"${name}" has been created.`,
+      description: `"${name}" has been created with ${messagesToCopy.length} messages.`,
     });
   }, [pendingBranchMessageId, messages, toast, navigate, workspaceId]);
 
@@ -457,7 +465,7 @@ export default function BranchView() {
                 
                 <span className="text-muted-foreground/50">/</span>
                 
-                {/* Workspace Name (editable) */}
+                {/* Workspace Name - clickable to navigate to main branch */}
                 <div className="flex items-center gap-1.5">
                   <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center">
                     <Sparkles className="h-3 w-3 text-primary" />
@@ -473,7 +481,7 @@ export default function BranchView() {
                     />
                   ) : (
                     <button
-                      onClick={() => setIsEditingName(true)}
+                      onClick={() => navigate(`/workspace/${workspaceId}/branch/main`)}
                       className="flex items-center gap-1.5 group font-medium text-foreground hover:text-primary transition-colors"
                     >
                       <span className="truncate max-w-[180px]">{workspaceName}</span>
