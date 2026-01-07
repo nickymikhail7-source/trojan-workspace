@@ -1,11 +1,10 @@
-import { useState } from "react";
-import { FolderKanban, FileText, Layers, Lightbulb, Target, BookOpen, PenTool, Search, MoreVertical, Pencil, Trash2, GitBranch } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FolderKanban, Search, MoreVertical, Pencil, Trash2, GitBranch } from "lucide-react";
 import { CollapsibleLeftRail } from "@/components/CollapsibleLeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
 import { EmptyState } from "@/components/EmptyState";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +20,8 @@ interface Workspace {
   tags: string[];
 }
 
-const workspaces: Workspace[] = [
+// Default sample workspaces
+const defaultWorkspaces: Workspace[] = [
   {
     id: "1",
     title: "Q1 Product Strategy",
@@ -66,11 +66,28 @@ const workspaces: Workspace[] = [
   },
 ];
 
+const STORAGE_KEY = "trojan-workspaces";
+
 export default function Workspaces() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Load workspaces from localStorage, merge with defaults
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const savedWorkspaces = JSON.parse(saved);
+      // Merge saved with defaults (avoid duplicates)
+      const defaultIds = new Set(defaultWorkspaces.map(w => w.id));
+      const userWorkspaces = savedWorkspaces.filter((w: Workspace) => !defaultIds.has(w.id));
+      setWorkspaces([...userWorkspaces, ...defaultWorkspaces]);
+    } else {
+      setWorkspaces(defaultWorkspaces);
+    }
+  }, []);
 
   const handleWorkspaceClick = (workspace: Workspace) => {
     navigate(`/workspace/${workspace.id}`);
@@ -78,10 +95,28 @@ export default function Workspaces() {
 
   const handleCreateWorkspace = (type: string) => {
     setIsModalOpen(false);
+    const newId = `new-${Date.now()}`;
+    const newWorkspace: Workspace = {
+      id: newId,
+      title: `New ${type} Workspace`,
+      lastActive: "Just now",
+      branchCount: 1,
+      tags: [type],
+    };
+    
+    // Save to localStorage
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const existing = saved ? JSON.parse(saved) : [];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([newWorkspace, ...existing]));
+    
+    setWorkspaces(prev => [newWorkspace, ...prev]);
+    
     toast({
       title: "Workspace created",
       description: `Your new ${type} workspace is ready.`,
     });
+    
+    navigate(`/workspace/${newId}/branch/main`);
   };
 
   const handleRenameWorkspace = (workspace: Workspace) => {
@@ -92,9 +127,20 @@ export default function Workspaces() {
   };
 
   const handleDeleteWorkspace = (workspace: Workspace) => {
+    // Remove from state
+    setWorkspaces(prev => prev.filter(w => w.id !== workspace.id));
+    
+    // Remove from localStorage
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const existing = JSON.parse(saved);
+      const updated = existing.filter((w: Workspace) => w.id !== workspace.id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
+    
     toast({
-      title: "Delete workspace",
-      description: `Deleting "${workspace.title}"...`,
+      title: "Workspace deleted",
+      description: `"${workspace.title}" has been deleted.`,
       variant: "destructive",
     });
   };

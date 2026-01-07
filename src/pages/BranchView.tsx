@@ -2,8 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Sparkles, Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { TopBar } from "@/components/TopBar";
-import { LeftRail } from "@/components/LeftRail";
+import { CollapsibleLeftRail } from "@/components/CollapsibleLeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
 import { NewBranchModal } from "@/components/NewBranchModal";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +41,10 @@ export default function BranchView() {
   const initialPrompt = searchParams.get("prompt");
 
   const [workspaceName, setWorkspaceName] = useState(() => {
+    // Check localStorage for saved workspaces first
+    const savedWorkspaces = JSON.parse(localStorage.getItem("trojan-workspaces") || "[]");
+    const savedWorkspace = savedWorkspaces.find((w: any) => w.id === workspaceId);
+    if (savedWorkspace) return savedWorkspace.title;
     if (isNewWorkspace) return "Untitled Workspace";
     return existingWorkspaceNames[workspaceId || "1"] || "Workspace";
   });
@@ -49,7 +52,6 @@ export default function BranchView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [activeNav, setActiveNav] = useState("home");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [pendingBranchMessageId, setPendingBranchMessageId] = useState<string | null>(null);
@@ -87,18 +89,22 @@ export default function BranchView() {
     scrollToBottom();
   }, [messages]);
 
-  const handleNavClick = (navId: string) => {
-    setActiveNav(navId);
-    if (navId === "home") navigate("/");
-    else if (navId === "recent") navigate("/recent");
-    else if (navId === "templates") navigate("/templates");
-    else if (navId === "library") navigate("/library");
-    else if (navId === "settings") navigate("/settings");
-  };
-
   const handleCreateWorkspace = (type: string) => {
     setIsModalOpen(false);
     const newId = `new-${Date.now()}`;
+    
+    // Save to localStorage
+    const saved = localStorage.getItem("trojan-workspaces");
+    const existing = saved ? JSON.parse(saved) : [];
+    const newWorkspace = {
+      id: newId,
+      title: `New ${type} Workspace`,
+      lastActive: "Just now",
+      branchCount: 1,
+      tags: [type],
+    };
+    localStorage.setItem("trojan-workspaces", JSON.stringify([newWorkspace, ...existing]));
+    
     toast({
       title: "Workspace created",
       description: `Your new ${type} workspace is ready.`,
@@ -108,11 +114,33 @@ export default function BranchView() {
 
   const handleNameSave = () => {
     setIsEditingName(false);
-    if (workspaceName.trim() === "") {
-      setWorkspaceName("Untitled Workspace");
+    const name = workspaceName.trim() === "" ? "Untitled Workspace" : workspaceName;
+    setWorkspaceName(name);
+    
+    // Update workspace name in localStorage
+    if (workspaceId) {
+      const saved = localStorage.getItem("trojan-workspaces");
+      if (saved) {
+        const workspaces = JSON.parse(saved);
+        const updated = workspaces.map((w: any) =>
+          w.id === workspaceId ? { ...w, title: name } : w
+        );
+        localStorage.setItem("trojan-workspaces", JSON.stringify(updated));
+      } else {
+        // Create new entry if workspace doesn't exist
+        const newWorkspace = {
+          id: workspaceId,
+          title: name,
+          lastActive: "Just now",
+          branchCount: 1,
+          tags: [],
+        };
+        localStorage.setItem("trojan-workspaces", JSON.stringify([newWorkspace]));
+      }
     }
+    
     toast({
-      description: `Workspace renamed to "${workspaceName}"`,
+      description: `Workspace renamed to "${name}"`,
     });
   };
 
@@ -322,11 +350,10 @@ export default function BranchView() {
   const showThinking = isStreaming && messages.some(m => m.status === "streaming" && m.content === "");
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <TopBar onNewWorkspace={() => setIsModalOpen(true)} />
+    <div className="h-screen bg-background flex overflow-hidden">
+      <CollapsibleLeftRail onNewWorkspace={() => setIsModalOpen(true)} />
 
-      <div className="flex flex-1 overflow-hidden">
-        <LeftRail activeItem={activeNav} onItemClick={handleNavClick} />
+      <div className="flex flex-1 flex-col overflow-hidden">
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Enhanced Branch Header */}

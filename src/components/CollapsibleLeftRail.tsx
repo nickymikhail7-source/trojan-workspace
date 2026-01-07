@@ -132,10 +132,10 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
       )}>
         {/* Header - Logo & Toggle */}
         <div className={cn(
-          "h-14 flex items-center justify-between shrink-0 border-b border-border",
-          isExpanded ? "px-4" : "px-2"
+          "h-14 flex items-center shrink-0 border-b border-border",
+          isExpanded ? "px-4 justify-between" : "px-0 justify-center"
         )}>
-          <TrojanLogo showText={isExpanded} size="sm" />
+          {isExpanded && <TrojanLogo showText={true} size="sm" />}
           
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
