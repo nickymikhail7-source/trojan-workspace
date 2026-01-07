@@ -49,7 +49,13 @@ export default function BranchView() {
     return existingWorkspaceNames[workspaceId || "1"] || "Workspace";
   });
   const [isEditingName, setIsEditingName] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  
+  // Load messages from localStorage
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const storageKey = `trojan-messages-${workspaceId}-${branchId}`;
+    const saved = localStorage.getItem(storageKey);
+    return saved ? JSON.parse(saved) : [];
+  });
   const [inputValue, setInputValue] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,6 +90,14 @@ export default function BranchView() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      const storageKey = `trojan-messages-${workspaceId}-${branchId}`;
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+    }
+  }, [messages, workspaceId, branchId]);
 
   useEffect(() => {
     scrollToBottom();
