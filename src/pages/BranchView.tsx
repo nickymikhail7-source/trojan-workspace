@@ -75,15 +75,10 @@ export default function BranchView() {
         // fallback
       }
     }
-    // Get workspace name for the main branch
-    const savedWorkspaces = JSON.parse(localStorage.getItem("trojan-workspaces") || "[]");
-    const savedWorkspace = savedWorkspaces.find((w: any) => w.id === workspaceId);
-    const wsName = savedWorkspace?.title || "Workspace";
-    
     return [
       {
         id: "main",
-        name: wsName,
+        name: "Main",
         messageId: "",
         createdAt: "Now",
         preview: "Primary conversation thread",
