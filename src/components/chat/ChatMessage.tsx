@@ -5,7 +5,7 @@ import {
   ThumbsDown, 
   Check, 
   Sparkles, 
-  Pin, 
+  Pencil, 
   GitBranch, 
   RefreshCw, 
 } from "lucide-react";
@@ -27,7 +27,7 @@ export interface Message {
 
 interface ChatMessageProps {
   message: Message;
-  onPin?: (messageId: string) => void;
+  onEdit?: (messageId: string) => void;
   onBranch?: (messageId: string) => void;
   onRegenerate?: (messageId: string) => void;
   isLastAssistantMessage?: boolean;
@@ -35,7 +35,7 @@ interface ChatMessageProps {
 
 export function ChatMessage({ 
   message, 
-  onPin, 
+  onEdit, 
   onBranch, 
   onRegenerate, 
   isLastAssistantMessage 
@@ -43,7 +43,6 @@ export function ChatMessage({
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [reaction, setReaction] = useState<"up" | "down" | null>(null);
-  const [isPinned, setIsPinned] = useState(message.isPinned || false);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -56,12 +55,8 @@ export function ChatMessage({
     setReaction(reaction === type ? null : type);
   };
 
-  const handlePin = () => {
-    setIsPinned(!isPinned);
-    onPin?.(message.id);
-    toast({
-      description: isPinned ? "Message unpinned" : "Message pinned",
-    });
+  const handleEdit = () => {
+    onEdit?.(message.id);
   };
 
   const handleBranch = () => {
@@ -101,13 +96,6 @@ export function ChatMessage({
           <ModeBadge mode={message.responseMode} className="mb-1" />
         )}
         
-        {/* Pin indicator */}
-        {isPinned && (
-          <div className="flex items-center gap-1 text-[10px] text-accent mb-1 px-1">
-            <Pin className="h-2.5 w-2.5 fill-current" />
-            <span className="font-medium">Pinned</span>
-          </div>
-        )}
 
         {/* Message Bubble */}
         <div
@@ -116,7 +104,7 @@ export function ChatMessage({
             isUser
               ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
               : "bg-card border border-border/80 text-foreground shadow-card hover:shadow-lg hover:border-border",
-            isPinned && !isUser && "ring-2 ring-accent/30 border-accent/40",
+            
             message.status === "streaming" && !isUser && "streaming-glow"
           )}
         >
@@ -173,22 +161,19 @@ export function ChatMessage({
                 <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
               </Tooltip>
 
-              {/* Pin */}
+              {/* Edit */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn(
-                      "h-7 w-7 rounded-md",
-                      isPinned ? "text-accent hover:text-accent/80" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
-                    onClick={handlePin}
+                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    onClick={handleEdit}
                   >
-                    <Pin className={cn("h-3.5 w-3.5", isPinned && "fill-current")} />
+                    <Pencil className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">{isPinned ? "Unpin" : "Pin"}</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
               </Tooltip>
 
               {/* Branch (assistant only) */}

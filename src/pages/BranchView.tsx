@@ -527,7 +527,7 @@ export default function BranchView() {
                   >
                     <ChatMessage
                       message={{ ...message, isPinned: pinnedMessageIds.has(message.id) }}
-                      onPin={handlePinMessage}
+                      onEdit={() => {}}
                       onBranch={handleBranchMessage}
                       onRegenerate={handleRegenerateMessage}
                       isLastAssistantMessage={message.id === lastAssistantMessageId}
