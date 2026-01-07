@@ -115,12 +115,6 @@ export function ChatMessage({
             message.status === "streaming" && !isUser && "streaming-glow"
           )}
         >
-          {/* Pin indicator badge */}
-          {message.isPinned && (
-            <div className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-md">
-              <Pin className="h-2.5 w-2.5 text-primary-foreground" />
-            </div>
-          )}
           
           {/* Subtle glow for user messages */}
           {isUser && (
