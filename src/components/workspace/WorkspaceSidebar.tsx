@@ -25,6 +25,7 @@ export interface Branch {
   createdAt: string;
   preview: string;
   isActive?: boolean;
+  parentBranchId?: string; // Track parent for hierarchy
 }
 
 export interface ContextFile {

@@ -327,6 +327,7 @@ export default function BranchView() {
       createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       preview: message.content.slice(0, 80) + (message.content.length > 80 ? "..." : ""),
       isActive: true,
+      parentBranchId: branchId, // Track the parent branch
     };
 
     setBranches((prev) => [
@@ -495,14 +496,51 @@ export default function BranchView() {
                   </button>
                 </div>
                 
-                <span className="text-muted-foreground/50">/</span>
                 
-                {/* Current Branch */}
-                <span className="font-medium text-foreground">
-                  {branches.find(b => b.id === branchId)?.name || "Main"}
-                </span>
+                {/* Branch Hierarchy Breadcrumb */}
+                {(() => {
+                  const currentBranch = branches.find(b => b.id === branchId);
+                  const breadcrumbBranches: Branch[] = [];
+                  
+                  // Build hierarchy from current branch up to root
+                  let branch = currentBranch;
+                  while (branch) {
+                    breadcrumbBranches.unshift(branch);
+                    branch = branch.parentBranchId 
+                      ? branches.find(b => b.id === branch!.parentBranchId) 
+                      : undefined;
+                  }
+                  
+                  return breadcrumbBranches.map((b, index) => (
+                    <div key={b.id} className="flex items-center gap-2">
+                      {index > 0 && (
+                        <span className="text-muted-foreground/50">/</span>
+                      )}
+                      {b.id === branchId ? (
+                        // Current branch - not clickable
+                        <span className="font-medium text-foreground flex items-center gap-1.5">
+                          {b.parentBranchId && (
+                            <GitBranch className="h-3 w-3 text-primary" />
+                          )}
+                          {b.name}
+                        </span>
+                      ) : (
+                        // Parent branch - clickable
+                        <button
+                          onClick={() => navigate(`/workspace/${workspaceId}/branch/${b.id}`)}
+                          className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                        >
+                          {b.parentBranchId && (
+                            <GitBranch className="h-3 w-3" />
+                          )}
+                          {b.name}
+                        </button>
+                      )}
+                    </div>
+                  ));
+                })()}
                 
-                {/* Branch indicator */}
+                {/* Branch count indicator */}
                 {branches.length > 1 && (
                   <span className="ml-1 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                     {branches.length} branches
