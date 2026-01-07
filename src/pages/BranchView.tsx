@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Sparkles, Edit2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Edit2, GitBranch, Pin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { CollapsibleLeftRail } from "@/components/CollapsibleLeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
@@ -445,55 +445,70 @@ export default function BranchView() {
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Breadcrumb Header */}
           <div className="border-b border-border bg-card/50 px-4 py-3 shrink-0">
-            <div className="flex items-center gap-2 text-sm">
-              {/* Home Link */}
-              <button
-                onClick={() => navigate("/")}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Home
-              </button>
-              
-              <span className="text-muted-foreground/50">/</span>
-              
-              {/* Workspace Name (editable) */}
-              <div className="flex items-center gap-1.5">
-                <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-3 w-3 text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                {/* Home Link */}
+                <button
+                  onClick={() => navigate("/")}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Home
+                </button>
+                
+                <span className="text-muted-foreground/50">/</span>
+                
+                {/* Workspace Name (editable) */}
+                <div className="flex items-center gap-1.5">
+                  <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="h-3 w-3 text-primary" />
+                  </div>
+                  {isEditingName ? (
+                    <Input
+                      value={workspaceName}
+                      onChange={(e) => setWorkspaceName(e.target.value)}
+                      onBlur={handleNameSave}
+                      onKeyDown={(e) => e.key === "Enter" && handleNameSave()}
+                      className="h-6 text-sm w-48 px-2"
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setIsEditingName(true)}
+                      className="flex items-center gap-1.5 group font-medium text-foreground hover:text-primary transition-colors"
+                    >
+                      <span className="truncate max-w-[180px]">{workspaceName}</span>
+                      <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  )}
                 </div>
-                {isEditingName ? (
-                  <Input
-                    value={workspaceName}
-                    onChange={(e) => setWorkspaceName(e.target.value)}
-                    onBlur={handleNameSave}
-                    onKeyDown={(e) => e.key === "Enter" && handleNameSave()}
-                    className="h-6 text-sm w-48 px-2"
-                    autoFocus
-                  />
-                ) : (
-                  <button
-                    onClick={() => setIsEditingName(true)}
-                    className="flex items-center gap-1.5 group font-medium text-foreground hover:text-primary transition-colors"
-                  >
-                    <span className="truncate max-w-[180px]">{workspaceName}</span>
-                    <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
+                
+                <span className="text-muted-foreground/50">/</span>
+                
+                {/* Current Branch */}
+                <span className="font-medium text-foreground">
+                  {branches.find(b => b.id === branchId)?.name || "Main"}
+                </span>
+                
+                {/* Branch indicator */}
+                {branches.length > 1 && (
+                  <span className="ml-1 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                    {branches.length} branches
+                  </span>
                 )}
               </div>
-              
-              <span className="text-muted-foreground/50">/</span>
-              
-              {/* Current Branch */}
-              <span className="font-medium text-foreground">
-                {branches.find(b => b.id === branchId)?.name || "Main"}
-              </span>
-              
-              {/* Branch indicator */}
-              {branches.length > 1 && (
-                <span className="ml-1 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                  {branches.length} branches
-                </span>
-              )}
+
+              {/* Sidebar Toggle - Top Right */}
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="h-9 w-9 rounded-xl bg-card border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all flex items-center justify-center"
+              >
+                <div className="relative">
+                  <GitBranch className="h-4 w-4 text-muted-foreground" />
+                  {(pinnedMessageIds.size > 0 || branches.length > 1) && (
+                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </div>
+              </button>
             </div>
           </div>
 
