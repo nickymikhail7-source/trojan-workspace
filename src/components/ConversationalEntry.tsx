@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Target, Bug, PenTool, FileText, ArrowUp } from "lucide-react";
+import { Target, Bug, PenTool, FileText, ArrowUp, Sparkles, Zap, Globe, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface ConversationalEntryProps {
-  userName?: string;
-  greeting?: string;
-  recentWorkspaces?: Array<{ id: string; title: string; lastActive: string; preview?: string }>;
-}
+import { AttachmentDropdown } from "./AttachmentDropdown";
+import { AIModelSelector } from "./AIModelSelector";
+import { ModeSelector, type ResponseMode } from "./chat/ModeSelector";
+import { PromptRefineDropdown } from "./chat/PromptRefineDropdown";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const quickActions = [
   {
@@ -36,12 +40,13 @@ const quickActions = [
   },
 ];
 
-export function ConversationalEntry({ 
-  userName = "there", 
-  greeting = "Hey",
-}: ConversationalEntryProps) {
+export function ConversationalEntry() {
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("gpt-4");
+  const [isAutoMode, setIsAutoMode] = useState(true);
+  const [responseMode, setResponseMode] = useState<ResponseMode>("auto");
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
 
@@ -75,76 +80,161 @@ export function ConversationalEntry({
     }
   };
 
-  return (
-    <div className="min-h-full flex flex-col items-center justify-center px-6 py-8">
-      <div className="w-full max-w-xl animate-fade-up">
-        {/* Minimal Greeting */}
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-medium text-foreground tracking-tight">
-            {greeting}, {userName}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            What would you like to work on?
-          </p>
-        </div>
+  const handleRefinePrompt = (refined: string) => {
+    setInputValue(refined);
+  };
 
-        {/* Compact Chat Input */}
-        <div
-          className={cn(
-            "relative rounded-xl border bg-card transition-all duration-200",
-            isFocused
-              ? "border-accent/60 shadow-sm"
-              : "border-border hover:border-border/80"
-          )}
-        >
-          <div className="flex items-end gap-2 p-3">
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask anything..."
-              rows={1}
-              className={cn(
-                "flex-1 resize-none bg-transparent text-foreground",
-                "placeholder:text-muted-foreground/60 focus:outline-none",
-                "text-sm leading-relaxed min-h-[24px] max-h-[120px]"
-              )}
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={!inputValue.trim()}
-              className={cn(
-                "h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                inputValue.trim()
-                  ? "bg-foreground text-background hover:bg-foreground/90"
-                  : "bg-secondary text-muted-foreground/50"
-              )}
-            >
-              <ArrowUp className="h-4 w-4" />
-            </button>
+  const handleRefineAndSend = (refined: string) => {
+    handleCreateWorkspace(refined);
+  };
+
+  return (
+    <TooltipProvider>
+      <div className="min-h-full flex flex-col items-center justify-center px-6 py-8">
+        <div className="w-full max-w-2xl animate-fade-up">
+          {/* Heading */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl md:text-3xl font-semibold text-foreground tracking-tight">
+              What's on your mind today?
+            </h1>
+          </div>
+
+          {/* Chatbox Container */}
+          <div
+            className={cn(
+              "rounded-2xl border bg-card/80 backdrop-blur-sm transition-all duration-200",
+              isFocused
+                ? "border-accent/60 shadow-lg shadow-accent/5"
+                : "border-border/60 hover:border-border"
+            )}
+          >
+            {/* Input Row */}
+            <div className="p-4 pb-2">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask anything..."
+                rows={1}
+                className={cn(
+                  "w-full resize-none bg-transparent text-foreground",
+                  "placeholder:text-muted-foreground/60 focus:outline-none",
+                  "text-sm leading-relaxed min-h-[24px] max-h-[120px]"
+                )}
+              />
+            </div>
+
+            {/* Toolbar Row */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-border/30">
+              {/* Left Side */}
+              <div className="flex items-center gap-1.5">
+                <AttachmentDropdown
+                  onUploadPhoto={() => console.log("Upload photo")}
+                  onUploadFile={() => console.log("Upload file")}
+                  onTakeScreenshot={() => console.log("Take screenshot")}
+                />
+                <AIModelSelector
+                  value={selectedModel}
+                  isAuto={isAutoMode}
+                  onValueChange={setSelectedModel}
+                  onAutoChange={setIsAutoMode}
+                />
+              </div>
+
+              {/* Right Side */}
+              <div className="flex items-center gap-0.5">
+                {/* Refine Prompt */}
+                <PromptRefineDropdown
+                  prompt={inputValue}
+                  onRefine={handleRefinePrompt}
+                  onSend={handleRefineAndSend}
+                  disabled={!inputValue.trim()}
+                />
+
+                {/* Mode Selector */}
+                <ModeSelector
+                  value={responseMode}
+                  onChange={setResponseMode}
+                />
+
+                {/* Web Search Toggle */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                      className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center",
+                        "transition-colors focus:outline-none",
+                        webSearchEnabled
+                          ? "text-accent bg-accent/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+                      )}
+                    >
+                      <Globe className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>{webSearchEnabled ? "Disable" : "Enable"} web search</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Voice Input */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center",
+                        "text-muted-foreground hover:text-foreground hover:bg-secondary/80",
+                        "transition-colors focus:outline-none"
+                      )}
+                    >
+                      <Mic className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Voice input</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Send Button */}
+                <button
+                  onClick={handleSubmit}
+                  disabled={!inputValue.trim()}
+                  className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center ml-1",
+                    "transition-colors focus:outline-none",
+                    inputValue.trim()
+                      ? "bg-accent text-accent-foreground hover:bg-accent/90"
+                      : "bg-secondary text-muted-foreground/50"
+                  )}
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.id}
+                  onClick={() => handleQuickAction(action)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] text-muted-foreground/80 hover:text-foreground hover:bg-secondary/60 transition-colors"
+                >
+                  <Icon className="h-3 w-3" />
+                  <span>{action.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-
-        {/* Quick Actions - Compact Pills */}
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <button
-                key={action.id}
-                onClick={() => handleQuickAction(action)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <Icon className="h-3 w-3" />
-                <span>{action.label}</span>
-              </button>
-            );
-          })}
-        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
