@@ -139,12 +139,18 @@ export function ConversationalEntry() {
 
             {/* Toolbar Row */}
             <div className="relative flex items-center justify-between px-3 py-2 border-t border-border/30">
-              {/* Left Side */}
-              <div className="flex items-center gap-1.5">
+              {/* Left Side: + | ✨ Refine | Model Selector */}
+              <div className="flex items-center gap-1">
                 <AttachmentDropdown
                   onUploadPhoto={() => console.log("Upload photo")}
                   onUploadFile={() => console.log("Upload file")}
                   onTakeScreenshot={() => console.log("Take screenshot")}
+                />
+                <PromptRefineDropdown
+                  prompt={inputValue}
+                  onRefine={handleRefinePrompt}
+                  onSend={handleRefineAndSend}
+                  disabled={!inputValue.trim()}
                 />
                 <AIModelSelector
                   value={selectedModel}
@@ -154,15 +160,8 @@ export function ConversationalEntry() {
                 />
               </div>
 
-              {/* Right Side */}
+              {/* Right Side: Mode | Web | Mic | Send */}
               <div className="flex items-center gap-0.5">
-                {/* Refine Prompt */}
-                <PromptRefineDropdown
-                  prompt={inputValue}
-                  onRefine={handleRefinePrompt}
-                  onSend={handleRefineAndSend}
-                  disabled={!inputValue.trim()}
-                />
 
                 {/* Mode Selector */}
                 <ModeSelector
