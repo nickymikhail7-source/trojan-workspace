@@ -115,6 +115,13 @@ export function ChatMessage({
             message.status === "streaming" && !isUser && "streaming-glow"
           )}
         >
+          {/* Pin indicator badge */}
+          {message.isPinned && (
+            <div className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+              <Pin className="h-2.5 w-2.5 text-primary-foreground" />
+            </div>
+          )}
+          
           {/* Subtle glow for user messages */}
           {isUser && (
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
@@ -168,35 +175,42 @@ export function ChatMessage({
                 <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
               </Tooltip>
 
-              {/* Pin for user messages, Edit for AI messages */}
-              {isUser ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      onClick={handlePin}
-                    >
-                      <Pin className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">Pin</TooltipContent>
-                </Tooltip>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      onClick={handleEdit}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
-                </Tooltip>
+              {/* User messages: Pin + Edit */}
+              {isUser && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 rounded-md",
+                          message.isPinned 
+                            ? "text-primary hover:text-primary/80 bg-primary/10" 
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                        onClick={handlePin}
+                      >
+                        <Pin className={cn("h-3.5 w-3.5", message.isPinned && "fill-current")} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">{message.isPinned ? "Unpin" : "Pin"}</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        onClick={handleEdit}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
+                  </Tooltip>
+                </>
               )}
 
               {/* Branch (assistant only) */}
