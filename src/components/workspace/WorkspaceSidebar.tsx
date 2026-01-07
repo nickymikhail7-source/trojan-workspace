@@ -144,14 +144,11 @@ export function WorkspaceSidebar({
                       description="Branch from any message to explore different directions"
                     />
                   ) : (
-                    branches.map((branch) => (
-                      <BranchCard
-                        key={branch.id}
-                        branch={branch}
-                        onClick={() => onBranchClick(branch.id)}
-                        onDelete={() => onDeleteBranch(branch.id)}
-                      />
-                    ))
+                    <BranchTree 
+                      branches={branches}
+                      onBranchClick={onBranchClick}
+                      onDeleteBranch={onDeleteBranch}
+                    />
                   )}
                 </>
               )}
@@ -323,12 +320,70 @@ function PinnedMessageCard({
   );
 }
 
+function BranchTree({
+  branches,
+  onBranchClick,
+  onDeleteBranch,
+}: {
+  branches: Branch[];
+  onBranchClick: (id: string) => void;
+  onDeleteBranch: (id: string) => void;
+}) {
+  // Build a map of parent -> children
+  const childrenMap = new Map<string | undefined, Branch[]>();
+  
+  branches.forEach(branch => {
+    const parentId = branch.parentBranchId || undefined;
+    if (!childrenMap.has(parentId)) {
+      childrenMap.set(parentId, []);
+    }
+    childrenMap.get(parentId)!.push(branch);
+  });
+
+  // Recursively render branches with indentation
+  const renderBranch = (branch: Branch, depth: number): React.ReactNode => {
+    const children = childrenMap.get(branch.id) || [];
+    
+    return (
+      <div key={branch.id}>
+        <BranchCard
+          branch={branch}
+          depth={depth}
+          onClick={() => onBranchClick(branch.id)}
+          onDelete={() => onDeleteBranch(branch.id)}
+        />
+        {children.length > 0 && (
+          <div className="relative">
+            {/* Vertical connector line */}
+            <div 
+              className="absolute left-[22px] top-0 bottom-3 w-px bg-border"
+              style={{ marginLeft: `${depth * 16}px` }}
+            />
+            {children.map(child => renderBranch(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Get root branches (no parent)
+  const rootBranches = childrenMap.get(undefined) || [];
+  
+  return (
+    <div className="space-y-1">
+      {rootBranches.map(branch => renderBranch(branch, 0))}
+    </div>
+  );
+}
+
 function BranchCard({
   branch,
+  depth = 0,
   onClick,
   onDelete,
 }: {
   branch: Branch;
+  depth?: number;
   onClick: () => void;
   onDelete: () => void;
 }) {
@@ -340,6 +395,7 @@ function BranchCard({
           ? "bg-primary/5 border-primary/30"
           : "bg-background/50 border-border hover:border-primary/30 hover:bg-background"
       )}
+      style={{ marginLeft: `${depth * 16}px` }}
       onClick={onClick}
     >
       <div className="flex items-start gap-3">
@@ -361,7 +417,7 @@ function BranchCard({
         <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
 
-      {!branch.isActive && (
+      {!branch.isActive && branch.id !== "main" && (
         <Button
           variant="ghost"
           size="icon"
