@@ -102,14 +102,23 @@ export function ConversationalEntry() {
           {/* Chatbox Container */}
           <div
             className={cn(
-              "rounded-2xl border bg-card/80 backdrop-blur-sm transition-all duration-200",
+              "relative rounded-2xl border backdrop-blur-sm transition-all duration-300 overflow-hidden",
+              "bg-gradient-to-b from-card via-card to-secondary/20",
               isFocused
-                ? "border-accent/60 shadow-lg shadow-accent/5"
-                : "border-border/60 hover:border-border"
+                ? "border-primary/40 shadow-xl shadow-primary/10 ring-2 ring-primary/20"
+                : "border-border/50 hover:border-border hover:shadow-lg hover:shadow-primary/5"
             )}
           >
+            {/* Subtle gradient overlay */}
+            <div 
+              className={cn(
+                "absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 transition-opacity duration-300 pointer-events-none",
+                isFocused && "opacity-100"
+              )} 
+            />
+            
             {/* Input Row */}
-            <div className="p-4 pb-2">
+            <div className="relative p-4 pb-2">
               <textarea
                 ref={inputRef}
                 value={inputValue}
@@ -121,14 +130,15 @@ export function ConversationalEntry() {
                 rows={1}
                 className={cn(
                   "w-full resize-none bg-transparent text-foreground",
-                  "placeholder:text-muted-foreground/60 focus:outline-none",
-                  "text-sm leading-relaxed min-h-[24px] max-h-[120px]"
+                  "placeholder:text-muted-foreground/50 focus:outline-none",
+                  "text-sm leading-relaxed min-h-[24px] max-h-[120px]",
+                  "transition-colors duration-200"
                 )}
               />
             </div>
 
             {/* Toolbar Row */}
-            <div className="flex items-center justify-between px-3 py-2 border-t border-border/30">
+            <div className="relative flex items-center justify-between px-3 py-2 border-t border-border/30">
               {/* Left Side */}
               <div className="flex items-center gap-1.5">
                 <AttachmentDropdown
