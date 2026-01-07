@@ -76,29 +76,97 @@ export default function BranchView() {
   const [contextFiles, setContextFiles] = useState<ContextFile[]>([]);
   const [memoryEnabled, setMemoryEnabled] = useState(true);
 
-  // Handle initial prompt from URL
-  useEffect(() => {
-    if (initialPrompt && messages.length === 0) {
-      handleSendMessage(initialPrompt);
-      // Clear the prompt from URL
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete("prompt");
-      navigate(`/workspace/${workspaceId}/branch/${branchId}`, { replace: true });
-    }
-  }, [initialPrompt]);
-
   // When user switches branches, load that branch's saved messages
+  // AND handle initial prompt from URL if present
   useEffect(() => {
     if (!workspaceId || !branchId) return;
+    
     const storageKey = `trojan-messages-${workspaceId}-${branchId}`;
     const saved = localStorage.getItem(storageKey);
-    setMessages(saved ? JSON.parse(saved) : []);
+    const savedMessages: Message[] = saved ? JSON.parse(saved) : [];
+    
+    setMessages(savedMessages);
     setIsStreaming(false);
     setInputValue("");
 
     // Ensure the UI highlights the active branch after navigation
     setBranches((prev) => prev.map((b) => ({ ...b, isActive: b.id === branchId })));
-  }, [workspaceId, branchId]);
+
+    // Handle initial prompt from URL (if present and no saved messages)
+    if (initialPrompt && savedMessages.length === 0) {
+      // Use setTimeout to ensure state is settled before sending
+      setTimeout(() => {
+        const userMessage: Message = {
+          id: Date.now().toString(),
+          role: "user",
+          content: initialPrompt.trim(),
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          status: "complete",
+        };
+
+        setMessages([userMessage]);
+
+        // Also save the new workspace to localStorage
+        const savedWorkspaces = JSON.parse(localStorage.getItem("trojan-workspaces") || "[]");
+        const exists = savedWorkspaces.some((w: any) => w.id === workspaceId);
+        if (!exists) {
+          const newWorkspace = {
+            id: workspaceId,
+            title: "Untitled Workspace",
+            lastActive: "Just now",
+            branchCount: 1,
+            tags: [],
+          };
+          localStorage.setItem("trojan-workspaces", JSON.stringify([newWorkspace, ...savedWorkspaces]));
+        }
+
+        // Clear the prompt from URL
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete("prompt");
+        navigate(`/workspace/${workspaceId}/branch/${branchId}`, { replace: true });
+
+        // Simulate AI response
+        setIsStreaming(true);
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: "",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          status: "streaming",
+        };
+
+        setMessages((prev) => [...prev, aiMessage]);
+
+        const responses = [
+          "That's an interesting point. Let me think through this with you.\n\nBased on what you've shared, I see a few key considerations:\n\n1. **Context matters** - Understanding the full picture helps us make better decisions\n2. **Trade-offs exist** - Every choice has pros and cons we should weigh\n3. **Iteration is key** - We can refine our approach as we learn more\n\nWhat aspect would you like to explore first?",
+          "Great question! Here's my analysis:\n\nThe core challenge seems to be finding the right balance between complexity and simplicity. Too simple, and we miss important nuances. Too complex, and we lose clarity.\n\nI'd suggest we:\n- Start with the most critical elements\n- Build incrementally\n- Test our assumptions early\n\nShall we dive deeper into any of these areas?",
+        ];
+        const responseText = responses[Math.floor(Math.random() * responses.length)];
+        let currentIndex = 0;
+
+        const streamInterval = setInterval(() => {
+          if (currentIndex < responseText.length) {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === aiMessage.id
+                  ? { ...msg, content: responseText.slice(0, currentIndex + 1) }
+                  : msg
+              )
+            );
+            currentIndex++;
+          } else {
+            clearInterval(streamInterval);
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === aiMessage.id ? { ...msg, status: "complete" } : msg
+              )
+            );
+            setIsStreaming(false);
+          }
+        }, 20);
+      }, 50);
+    }
+  }, [workspaceId, branchId, initialPrompt]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
