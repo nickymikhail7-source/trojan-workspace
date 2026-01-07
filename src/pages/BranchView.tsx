@@ -63,16 +63,29 @@ export default function BranchView() {
   const [pendingBranchMessageId, setPendingBranchMessageId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set());
-  const [branches, setBranches] = useState<Branch[]>([
-    {
-      id: "main",
-      name: "Main",
-      messageId: "",
-      createdAt: "Now",
-      preview: "Primary conversation thread",
-      isActive: branchId === "main",
-    },
-  ]);
+  const [branches, setBranches] = useState<Branch[]>(() => {
+    // Load branches from localStorage
+    const storageKey = `trojan-branches-${workspaceId}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Branch[];
+        return parsed.map(b => ({ ...b, isActive: b.id === branchId }));
+      } catch {
+        // fallback
+      }
+    }
+    return [
+      {
+        id: "main",
+        name: "Main",
+        messageId: "",
+        createdAt: "Now",
+        preview: "Primary conversation thread",
+        isActive: branchId === "main",
+      },
+    ];
+  });
   const [contextFiles, setContextFiles] = useState<ContextFile[]>([]);
   const [memoryEnabled, setMemoryEnabled] = useState(true);
 
@@ -97,6 +110,24 @@ export default function BranchView() {
     // Ensure the UI highlights the active branch after navigation
     setBranches((prev) => prev.map((b) => ({ ...b, isActive: b.id === branchId })));
   }, [workspaceId, branchId]);
+
+  // Save branches to localStorage whenever they change
+  useEffect(() => {
+    if (!workspaceId) return;
+    const storageKey = `trojan-branches-${workspaceId}`;
+    localStorage.setItem(storageKey, JSON.stringify(branches));
+    
+    // Also update branch count in workspaces list
+    try {
+      const savedWorkspaces = JSON.parse(localStorage.getItem("trojan-workspaces") || "[]");
+      const updated = savedWorkspaces.map((w: any) => 
+        w.id === workspaceId ? { ...w, branchCount: branches.length } : w
+      );
+      localStorage.setItem("trojan-workspaces", JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+  }, [branches, workspaceId]);
 
   // If we arrived here from Home with ?prompt=..., seed the conversation once
   useEffect(() => {
