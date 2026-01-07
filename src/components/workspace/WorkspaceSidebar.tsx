@@ -136,16 +136,6 @@ export function WorkspaceSidebar({
             <div className="p-4 space-y-3">
               {activeTab === "branches" && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2 mb-4"
-                    onClick={onNewBranch}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    New Branch
-                  </Button>
-                  
                   {branches.length === 0 ? (
                     <EmptyState
                       icon={<GitBranch className="h-8 w-8" />}
