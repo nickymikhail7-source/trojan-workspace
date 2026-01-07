@@ -87,16 +87,28 @@ export default function BranchView() {
     }
   }, [initialPrompt]);
 
+  // When user switches branches, load that branch's saved messages
+  useEffect(() => {
+    if (!workspaceId || !branchId) return;
+    const storageKey = `trojan-messages-${workspaceId}-${branchId}`;
+    const saved = localStorage.getItem(storageKey);
+    setMessages(saved ? JSON.parse(saved) : []);
+    setIsStreaming(false);
+    setInputValue("");
+
+    // Ensure the UI highlights the active branch after navigation
+    setBranches((prev) => prev.map((b) => ({ ...b, isActive: b.id === branchId })));
+  }, [workspaceId, branchId]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   // Save messages to localStorage whenever they change
   useEffect(() => {
-    if (messages.length > 0) {
-      const storageKey = `trojan-messages-${workspaceId}-${branchId}`;
-      localStorage.setItem(storageKey, JSON.stringify(messages));
-    }
+    if (!workspaceId || !branchId) return;
+    const storageKey = `trojan-messages-${workspaceId}-${branchId}`;
+    localStorage.setItem(storageKey, JSON.stringify(messages));
   }, [messages, workspaceId, branchId]);
 
   useEffect(() => {
@@ -243,25 +255,35 @@ export default function BranchView() {
 
   const handleCreateBranch = useCallback((name: string) => {
     if (!pendingBranchMessageId) return;
-    
+
     const message = messages.find((m) => m.id === pendingBranchMessageId);
     if (!message) return;
 
+    const newBranchId = `branch-${Date.now()}`;
+
     const newBranch: Branch = {
-      id: `branch-${Date.now()}`,
+      id: newBranchId,
       name,
       messageId: pendingBranchMessageId,
       createdAt: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       preview: message.content.slice(0, 80) + (message.content.length > 80 ? "..." : ""),
+      isActive: true,
     };
 
-    setBranches((prev) => [...prev, newBranch]);
+    setBranches((prev) => [
+      ...prev.map((b) => ({ ...b, isActive: false })),
+      newBranch,
+    ]);
     setPendingBranchMessageId(null);
+
+    // Immediately navigate to the newly created branch
+    navigate(`/workspace/${workspaceId}/branch/${newBranchId}`);
+
     toast({
       title: "Branch created",
       description: `"${name}" has been created.`,
     });
-  }, [pendingBranchMessageId, messages, toast]);
+  }, [pendingBranchMessageId, messages, toast, navigate, workspaceId]);
 
   const handlePinnedMessageClick = useCallback((messageId: string) => {
     const element = messageRefs.current.get(messageId);
