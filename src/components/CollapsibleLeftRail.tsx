@@ -1,19 +1,16 @@
 import { useState, useEffect } from "react";
 import { 
-  PenSquare,
-  Search,
-  ImageIcon,
-  LayoutGrid,
-  Code,
-  Bot,
-  FolderPlus,
-  Folder,
-  MessageSquare,
+  Home, 
+  FolderKanban, 
+  Clock, 
+  LayoutTemplate, 
+  Library, 
+  Plus, 
+  Settings, 
   PanelLeftClose,
   PanelLeft,
   Sparkles,
   UserCircle,
-  Settings,
   HelpCircle,
   LogOut,
   ChevronRight
@@ -33,28 +30,19 @@ type NavItem = {
   label: string;
   id: string;
   path?: string;
-  badge?: string;
-  action?: string;
+  action?: "new-workspace";
 };
 
 const mainNavItems: NavItem[] = [
-  { icon: PenSquare, label: "New chat", id: "new-chat", path: "/" },
-  { icon: Search, label: "Search chats", id: "search", path: "/search" },
-  { icon: ImageIcon, label: "Images", id: "images", path: "/images", badge: "NEW" },
-  { icon: LayoutGrid, label: "Apps", id: "apps", path: "/apps" },
-  { icon: Code, label: "Codex", id: "codex", path: "/codex" },
-  { icon: Bot, label: "GPTs", id: "gpts", path: "/gpts" },
+  { icon: Home, label: "Home", id: "home", path: "/" },
+  { icon: FolderKanban, label: "Workspaces", id: "workspaces", path: "/workspaces" },
+  { icon: Clock, label: "Recent", id: "recent", path: "/recent" },
+  { icon: LayoutTemplate, label: "Templates", id: "templates", path: "/templates" },
+  { icon: Library, label: "Library", id: "library", path: "/library" },
 ];
 
-const sampleProjects = [
-  { id: "kloudfarm", name: "Kloudfarm" },
-  { id: "convo", name: "Convo" },
-];
-
-const sampleChats = [
-  { id: "chat-1", name: "Trojan AI Misadventures", active: true },
-  { id: "chat-2", name: "Resume review summary", active: false },
-  { id: "chat-3", name: "Self-Review Assessment: Skil...", active: false },
+const actionItems: NavItem[] = [
+  { icon: Plus, label: "New Workspace", id: "new", action: "new-workspace" },
 ];
 
 interface CollapsibleLeftRailProps {
@@ -77,19 +65,20 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
 
   const getActiveItem = () => {
     const path = location.pathname;
-    if (path === "/") return "new-chat";
-    if (path.startsWith("/search")) return "search";
-    if (path.startsWith("/images")) return "images";
-    if (path.startsWith("/apps")) return "apps";
-    if (path.startsWith("/codex")) return "codex";
-    if (path.startsWith("/gpts")) return "gpts";
-    return "";
+    if (path === "/") return "home";
+    if (path.startsWith("/workspace")) return "workspaces";
+    if (path === "/recent") return "recent";
+    if (path === "/templates") return "templates";
+    if (path === "/library") return "library";
+    return "home";
   };
 
   const activeItem = getActiveItem();
 
-  const handleNavClick = (item: NavItem) => {
-    if (item.path) {
+  const handleItemClick = (item: NavItem) => {
+    if (item.action === "new-workspace") {
+      onNewWorkspace?.();
+    } else if (item.path) {
       navigate(item.path);
     }
   };
@@ -97,26 +86,24 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
   const NavButton = ({ item }: { item: NavItem }) => {
     const isActive = activeItem === item.id;
     const Icon = item.icon;
+    const isNewWorkspace = item.action === "new-workspace";
 
     const button = (
       <button
-        onClick={() => handleNavClick(item)}
+        onClick={() => handleItemClick(item)}
         className={cn(
           "w-full flex items-center gap-3 rounded-lg transition-all duration-150",
-          isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center",
-          isActive 
-            ? "bg-secondary/80 text-foreground" 
-            : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+          isExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center",
+          isNewWorkspace
+            ? "bg-accent text-accent-foreground hover:bg-accent/90"
+            : isActive 
+              ? "bg-secondary/80 text-foreground" 
+              : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
         )}
       >
         <Icon className="h-5 w-5 shrink-0" />
         {isExpanded && (
-          <span className="text-sm truncate flex-1 text-left">{item.label}</span>
-        )}
-        {isExpanded && item.badge && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
-            {item.badge}
-          </span>
+          <span className="text-sm font-medium truncate">{item.label}</span>
         )}
       </button>
     );
@@ -128,14 +115,7 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
             {button}
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
-            <div className="flex items-center gap-2">
-              {item.label}
-              {item.badge && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary">
-                  {item.badge}
-                </span>
-              )}
-            </div>
+            {item.label}
           </TooltipContent>
         </Tooltip>
       );
@@ -148,14 +128,14 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
     <TooltipProvider>
       <nav className={cn(
         "border-r border-border bg-background flex flex-col shrink-0 transition-all duration-200 h-screen",
-        isExpanded ? "w-64" : "w-14"
+        isExpanded ? "w-56" : "w-14"
       )}>
         {/* Header - Logo & Toggle */}
         <div className={cn(
-          "h-14 flex items-center justify-between shrink-0",
+          "h-14 flex items-center justify-between shrink-0 border-b border-border",
           isExpanded ? "px-4" : "px-2"
         )}>
-          <TrojanLogo showText={false} size="sm" />
+          <TrojanLogo showText={isExpanded} size="sm" />
           
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
@@ -176,82 +156,18 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
           </Tooltip>
         </div>
 
-        {/* Main Navigation */}
-        <div className={cn("py-2 space-y-0.5", isExpanded ? "px-3" : "px-2")}>
+        {/* Main Nav */}
+        <div className={cn("flex-1 py-3 space-y-1", isExpanded ? "px-3" : "px-2")}>
           {mainNavItems.map((item) => (
             <NavButton key={item.id} item={item} />
           ))}
+          
+          <div className="pt-2">
+            {actionItems.map((item) => (
+              <NavButton key={item.id} item={item} />
+            ))}
+          </div>
         </div>
-
-        {/* Projects Section */}
-        {isExpanded && (
-          <div className="px-3 py-4">
-            <h3 className="text-xs font-medium text-muted-foreground px-3 mb-2">
-              Projects
-            </h3>
-            <div className="space-y-0.5">
-              <button
-                onClick={onNewWorkspace}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-              >
-                <FolderPlus className="h-5 w-5 shrink-0" />
-                <span className="text-sm">New project</span>
-              </button>
-              {sampleProjects.map((project) => (
-                <button
-                  key={project.id}
-                  onClick={() => navigate(`/workspace/${project.id}`)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-                >
-                  <Folder className="h-5 w-5 shrink-0" />
-                  <span className="text-sm truncate">{project.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Your Chats Section */}
-        {isExpanded && (
-          <div className="flex-1 px-3 py-2 overflow-y-auto">
-            <h3 className="text-xs font-medium text-muted-foreground px-3 mb-2">
-              Your chats
-            </h3>
-            <div className="space-y-0.5">
-              {sampleChats.map((chat) => (
-                <button
-                  key={chat.id}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left",
-                    chat.active
-                      ? "bg-secondary/80 text-foreground"
-                      : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
-                  )}
-                >
-                  <MessageSquare className="h-4 w-4 shrink-0 opacity-0" />
-                  <span className="text-sm truncate">{chat.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Collapsed state - show icon-only for projects/chats */}
-        {!isExpanded && (
-          <div className="flex-1 py-2 px-2 space-y-0.5">
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={onNewWorkspace}
-                  className="w-full flex items-center justify-center py-2 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors"
-                >
-                  <FolderPlus className="h-5 w-5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">New project</TooltipContent>
-            </Tooltip>
-          </div>
-        )}
 
         {/* User Profile */}
         <div className={cn("py-3 border-t border-border", isExpanded ? "px-3" : "px-2")}>
@@ -260,7 +176,7 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
               <button
                 className={cn(
                   "w-full flex items-center gap-3 rounded-lg transition-all duration-150 text-foreground hover:bg-secondary/50",
-                  isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center"
+                  isExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
                 )}
               >
                 <div className="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center shrink-0 text-white font-medium text-sm">
