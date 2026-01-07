@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Send, Square, Paperclip, X, Sparkles } from "lucide-react";
+import { ArrowUp, Square, X, Globe, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PromptRefineDropdown } from "./PromptRefineDropdown";
 import { ModeSelector, type ResponseMode } from "./ModeSelector";
+import { AttachmentDropdown } from "@/components/AttachmentDropdown";
+import { AIModelSelector } from "@/components/AIModelSelector";
 
 interface AttachedFile {
   id: string;
@@ -27,13 +28,15 @@ export interface ChatComposerRef {
 }
 
 export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
-  ({ value, onChange, onSend, onStop, isStreaming = false, placeholder = "Type a message...", disabled = false }, ref) => {
+  ({ value, onChange, onSend, onStop, isStreaming = false, placeholder = "Ask anything...", disabled = false }, ref) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [isFocused, setIsFocused] = useState(false);
     const [responseMode, setResponseMode] = useState<ResponseMode>("auto");
-    const [useWorkspaceKnowledge, setUseWorkspaceKnowledge] = useState(false);
+    const [selectedModel, setSelectedModel] = useState("gpt-4");
+    const [isAutoMode, setIsAutoMode] = useState(true);
+    const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
     useImperativeHandle(ref, () => ({
       focus: () => textareaRef.current?.focus(),
@@ -44,7 +47,7 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
       const textarea = textareaRef.current;
       if (textarea) {
         textarea.style.height = "auto";
-        const newHeight = Math.min(textarea.scrollHeight, 160); // max ~6 rows
+        const newHeight = Math.min(textarea.scrollHeight, 160);
         textarea.style.height = `${newHeight}px`;
       }
     }, [value]);
@@ -56,10 +59,6 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
           onSend(value, responseMode);
         }
       }
-    };
-
-    const handleAttachClick = () => {
-      fileInputRef.current?.click();
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,84 +89,77 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
       onSend(refinedPrompt, responseMode);
     };
 
+    const handleUploadPhoto = () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files) {
+          const newFiles: AttachedFile[] = Array.from(files).map((file) => ({
+            id: `${Date.now()}-${file.name}`,
+            name: file.name,
+            size: file.size,
+          }));
+          setAttachedFiles((prev) => [...prev, ...newFiles]);
+        }
+      };
+      input.click();
+    };
+
+    const handleUploadFile = () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.onchange = (e) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files) {
+          const newFiles: AttachedFile[] = Array.from(files).map((file) => ({
+            id: `${Date.now()}-${file.name}`,
+            name: file.name,
+            size: file.size,
+          }));
+          setAttachedFiles((prev) => [...prev, ...newFiles]);
+        }
+      };
+      input.click();
+    };
+
     const canSend = value.trim().length > 0 && !isStreaming && !disabled;
 
     return (
-      <div className="w-full">
-        {/* Main Composer Container */}
-        <div 
-          className={cn(
-            "relative bg-card/80 rounded-xl overflow-hidden transition-all duration-200",
-            "border",
-            isFocused 
-              ? "border-primary/30 shadow-sm" 
-              : "border-border/60 hover:border-border"
-          )}
-        >
-
-          {/* Attached Files */}
-          {attachedFiles.length > 0 && (
-            <div className="px-3 pt-2 pb-1 border-b border-border/30 flex flex-wrap gap-1.5">
-              {attachedFiles.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center gap-1.5 bg-secondary/50 rounded-lg px-2 py-1 text-xs group/file"
-                >
-                  <Paperclip className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-foreground max-w-[80px] truncate">{file.name}</span>
-                  <button
-                    onClick={() => removeFile(file.id)}
-                    className="h-4 w-4 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+      <TooltipProvider>
+        <div className="w-full">
+          {/* Main Composer Container */}
+          <div 
+            className={cn(
+              "rounded-2xl border bg-card/80 backdrop-blur-sm transition-all duration-200",
+              isFocused 
+                ? "border-accent/60 shadow-lg shadow-accent/5" 
+                : "border-border/60 hover:border-border"
+            )}
+          >
+            {/* Attached Files */}
+            {attachedFiles.length > 0 && (
+              <div className="px-4 pt-3 pb-1 flex flex-wrap gap-1.5">
+                {attachedFiles.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center gap-1.5 bg-secondary/50 rounded-lg px-2 py-1 text-xs group/file"
                   >
-                    <X className="h-2.5 w-2.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                    <span className="text-foreground max-w-[100px] truncate">{file.name}</span>
+                    <button
+                      onClick={() => removeFile(file.id)}
+                      className="h-4 w-4 rounded-full hover:bg-destructive/20 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
-          {/* Input Row */}
-          <div className="flex items-center gap-1.5 px-2 py-1.5">
-            {/* Mode Selector */}
-            <ModeSelector
-              value={responseMode}
-              onChange={setResponseMode}
-              useWorkspaceKnowledge={useWorkspaceKnowledge}
-              onWorkspaceKnowledgeChange={setUseWorkspaceKnowledge}
-              disabled={disabled || isStreaming}
-            />
-
-            {/* Attach Button */}
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                    onClick={handleAttachClick}
-                    disabled={disabled}
-                  >
-                    <Paperclip className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  Attach files
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-            />
-
-            {/* Textarea */}
-            <div className="flex-1 min-w-0">
+            {/* Input Row */}
+            <div className="p-4 pb-2">
               <textarea
                 ref={textareaRef}
                 value={value}
@@ -179,76 +171,133 @@ export const ChatComposer = forwardRef<ChatComposerRef, ChatComposerProps>(
                 disabled={disabled || isStreaming}
                 rows={1}
                 className={cn(
-                  "w-full min-h-[32px] max-h-[100px] resize-none",
-                  "bg-transparent text-sm text-foreground placeholder:text-muted-foreground",
-                  "focus:outline-none py-1.5 px-1",
+                  "w-full resize-none bg-transparent text-foreground",
+                  "placeholder:text-muted-foreground/60 focus:outline-none",
+                  "text-sm leading-relaxed min-h-[24px] max-h-[120px]",
                   "disabled:opacity-50"
                 )}
               />
             </div>
 
-            {/* Refine Button */}
-            <TooltipProvider delayDuration={300}>
-              <PromptRefineDropdown
-                prompt={value}
-                onRefine={handleRefine}
-                onSend={handleRefineSend}
-                disabled={disabled || isStreaming}
-              />
-            </TooltipProvider>
+            {/* Toolbar Row */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-border/30">
+              {/* Left Side */}
+              <div className="flex items-center gap-1.5">
+                <AttachmentDropdown
+                  onUploadPhoto={handleUploadPhoto}
+                  onUploadFile={handleUploadFile}
+                  onTakeScreenshot={() => console.log("Take screenshot")}
+                />
+                <AIModelSelector
+                  value={selectedModel}
+                  isAuto={isAutoMode}
+                  onValueChange={setSelectedModel}
+                  onAutoChange={setIsAutoMode}
+                />
+              </div>
 
-            {/* Send / Stop Button */}
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  {isStreaming ? (
-                    <Button
-                      type="button"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 rounded-md bg-destructive/10 text-destructive hover:bg-destructive/20"
-                      onClick={onStop}
-                    >
-                      <Square className="h-3 w-3 fill-current" />
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="icon"
+              {/* Right Side */}
+              <div className="flex items-center gap-0.5">
+                {/* Refine Prompt */}
+                <PromptRefineDropdown
+                  prompt={value}
+                  onRefine={handleRefine}
+                  onSend={handleRefineSend}
+                  disabled={!value.trim() || disabled || isStreaming}
+                />
+
+                {/* Mode Selector */}
+                <ModeSelector
+                  value={responseMode}
+                  onChange={setResponseMode}
+                  disabled={disabled || isStreaming}
+                />
+
+                {/* Web Search Toggle */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                      disabled={disabled || isStreaming}
                       className={cn(
-                        "h-7 w-7 shrink-0 rounded-md transition-colors",
-                        canSend
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                          : "bg-secondary text-muted-foreground"
+                        "h-8 w-8 rounded-lg flex items-center justify-center",
+                        "transition-colors focus:outline-none disabled:opacity-50",
+                        webSearchEnabled
+                          ? "text-accent bg-accent/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
                       )}
-                      onClick={() => onSend(value, responseMode)}
-                      disabled={!canSend}
                     >
-                      <Send className="h-3 w-3" />
-                    </Button>
-                  )}
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  {isStreaming ? "Stop" : "Send"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                      <Globe className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>{webSearchEnabled ? "Disable" : "Enable"} web search</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Voice Input */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      disabled={disabled || isStreaming}
+                      className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center",
+                        "text-muted-foreground hover:text-foreground hover:bg-secondary/80",
+                        "transition-colors focus:outline-none disabled:opacity-50"
+                      )}
+                    >
+                      <Mic className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Voice input</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Send / Stop Button */}
+                {isStreaming ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={onStop}
+                        className="h-8 w-8 rounded-full flex items-center justify-center ml-1 bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                      >
+                        <Square className="h-3.5 w-3.5 fill-current" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p>Stop generating</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <button
+                    onClick={() => onSend(value, responseMode)}
+                    disabled={!canSend}
+                    className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center ml-1",
+                      "transition-colors focus:outline-none",
+                      canSend
+                        ? "bg-accent text-accent-foreground hover:bg-accent/90"
+                        : "bg-secondary text-muted-foreground/50"
+                    )}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Helper Text */}
-        <div className="flex items-center justify-center gap-1.5 mt-2 text-[10px] text-muted-foreground/70">
-          <Sparkles className="h-2.5 w-2.5" />
-          <span>AI-powered thinking partner</span>
-          <span className="mx-1">•</span>
-          <span>
-            <kbd className="px-1 py-0.5 rounded bg-secondary/50 text-[9px] font-mono">Enter</kbd> to send
-            <span className="mx-1">·</span>
-            <kbd className="px-1 py-0.5 rounded bg-secondary/50 text-[9px] font-mono">Shift+Enter</kbd> new line
-          </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
-      </div>
+      </TooltipProvider>
     );
-
   }
 );
 
