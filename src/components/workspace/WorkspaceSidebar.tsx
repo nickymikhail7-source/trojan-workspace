@@ -79,31 +79,6 @@ export function WorkspaceSidebar({
 
   return (
     <>
-      {/* Collapsed Toggle Button */}
-      {!isOpen && (
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="fixed right-4 top-20 z-40 h-10 w-10 rounded-xl bg-card border border-border shadow-lg hover:shadow-xl transition-all"
-                onClick={onToggle}
-              >
-                <div className="relative">
-                  <GitBranch className="h-5 w-5 text-muted-foreground" />
-                  {(pinnedMessages.length > 0 || branches.length > 0) && (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
-                  )}
-                </div>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Workspace Sidebar</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
 
       {/* Sidebar Panel */}
       <div
