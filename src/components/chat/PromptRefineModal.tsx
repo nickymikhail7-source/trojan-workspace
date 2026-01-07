@@ -1,28 +1,23 @@
 import * as React from "react";
 import { 
   RefreshCw, 
-  MessageCircleQuestion, 
   X, 
   Send, 
-  Replace, 
   Copy, 
   Check, 
   RotateCcw,
   Sparkles,
-  Eye
+  MessageCircleQuestion
 } from "lucide-react";
 import {
   Dialog,
-  DialogContent,
   DialogPortal,
   DialogOverlay,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface RefineOption {
   id: string;
@@ -40,7 +35,7 @@ interface PromptRefineModalProps {
   onReplaceAndSend: (refinedPrompt: string) => void;
 }
 
-// Simulated refinement function - in production this would call an AI
+// Simulated refinement function
 function generateRefinedPrompt(original: string, type: string): string {
   const refinements: Record<string, (p: string) => string> = {
     clarify: (p) =>
@@ -103,12 +98,10 @@ export function PromptRefineModal({
   const [refinedPrompt, setRefinedPrompt] = React.useState("");
   const [originalEditable, setOriginalEditable] = React.useState(originalPrompt);
   const [isRefining, setIsRefining] = React.useState(false);
-  const [showDifferences, setShowDifferences] = React.useState(false);
   const [copiedOriginal, setCopiedOriginal] = React.useState(false);
   const [copiedRefined, setCopiedRefined] = React.useState(false);
   const [initialRefinedPrompt, setInitialRefinedPrompt] = React.useState("");
-  const [mobileTab, setMobileTab] = React.useState("original");
-  const isMobile = useIsMobile();
+  const [askQuestionsMode, setAskQuestionsMode] = React.useState(false);
 
   const changes = React.useMemo(
     () => (refineType ? generateChanges(refineType.id) : []),
@@ -119,6 +112,7 @@ export function PromptRefineModal({
     if (isOpen && refineType) {
       setIsRefining(true);
       setOriginalEditable(originalPrompt);
+      setAskQuestionsMode(false);
       const timer = setTimeout(() => {
         const refined = generateRefinedPrompt(originalPrompt, refineType.id);
         setRefinedPrompt(refined);
@@ -139,12 +133,6 @@ export function PromptRefineModal({
     }, 600);
   };
 
-  const handleAskQuestions = () => {
-    setRefinedPrompt(
-      `Before I proceed, I'd like to clarify a few things about your request:\n\n"${originalEditable}"\n\n1. What is the primary goal you're trying to achieve?\n2. Are there any specific constraints I should be aware of?\n3. What format would be most helpful for the response?`
-    );
-  };
-
   const handleCopy = async (text: string, type: "original" | "refined") => {
     await navigator.clipboard.writeText(text);
     if (type === "original") {
@@ -162,157 +150,21 @@ export function PromptRefineModal({
 
   const hasRefinedChanged = refinedPrompt !== initialRefinedPrompt;
 
-  // Mobile Layout
-  if (isMobile) {
-    return (
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogPortal>
-          <DialogOverlay className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm" />
-          <div className="fixed inset-0 z-50 flex flex-col bg-background animate-in fade-in-0 slide-in-from-bottom-4 duration-300">
-            {/* Mobile Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-              <div className="flex-1">
-                <h2 className="text-base font-semibold text-foreground">Refine your prompt</h2>
-                {refineType && (
-                  <span className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-medium">
-                    <Sparkles className="h-3 w-3" />
-                    {refineType.label}
-                  </span>
-                )}
-              </div>
-              <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Mobile Tabs */}
-            <Tabs value={mobileTab} onValueChange={setMobileTab} className="flex-1 flex flex-col overflow-hidden">
-              <TabsList className="w-full justify-start px-4 pt-2 bg-transparent border-b border-border rounded-none h-auto gap-0">
-                <TabsTrigger 
-                  value="original" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2"
-                >
-                  Original
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="refined" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2"
-                >
-                  Refined
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="changes" 
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-4 py-2"
-                >
-                  Changes
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="original" className="flex-1 p-4 overflow-auto mt-0">
-                <Textarea
-                  value={originalEditable}
-                  onChange={(e) => setOriginalEditable(e.target.value)}
-                  className="h-full min-h-[200px] resize-none text-base leading-relaxed"
-                  placeholder="Your original prompt..."
-                />
-              </TabsContent>
-
-              <TabsContent value="refined" className="flex-1 p-4 overflow-auto mt-0">
-                {isRefining ? (
-                  <div className="space-y-3 p-4 rounded-lg border border-border bg-muted/20">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      <span>Refining your prompt...</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-muted/50 rounded animate-pulse" />
-                      <div className="h-4 bg-muted/50 rounded animate-pulse w-3/4" />
-                      <div className="h-4 bg-muted/50 rounded animate-pulse w-1/2" />
-                    </div>
-                  </div>
-                ) : (
-                  <Textarea
-                    value={refinedPrompt}
-                    onChange={(e) => setRefinedPrompt(e.target.value)}
-                    className="h-full min-h-[200px] resize-none text-base leading-relaxed"
-                    placeholder="Your refined prompt will appear here..."
-                  />
-                )}
-              </TabsContent>
-
-              <TabsContent value="changes" className="flex-1 p-4 overflow-auto mt-0">
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium text-foreground">What changed</h3>
-                  <ul className="space-y-2">
-                    {changes.map((change, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <div className="h-1.5 w-1.5 rounded-full bg-accent mt-1.5 shrink-0" />
-                        {change}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            {/* Mobile Footer */}
-            <div className="p-4 border-t border-border bg-card space-y-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRefineAgain}
-                  disabled={isRefining}
-                  className="text-muted-foreground"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1.5" />
-                  Refine again
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" className="flex-1" onClick={onClose}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => onReplace(refinedPrompt)}
-                  disabled={isRefining || !refinedPrompt.trim()}
-                >
-                  Apply
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={() => onReplaceAndSend(refinedPrompt)}
-                  disabled={isRefining || !refinedPrompt.trim()}
-                >
-                  <Send className="h-4 w-4 mr-1.5" />
-                  Send
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogPortal>
-      </Dialog>
-    );
-  }
-
-  // Desktop Layout
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogPortal>
-        <DialogOverlay className="fixed inset-0 z-50 bg-foreground/15 backdrop-blur-sm" />
+        <DialogOverlay className="fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm" />
         <div
           className={cn(
             "fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%]",
-            "w-[min(1100px,92vw)] h-[min(720px,88vh)]",
+            "w-[min(1200px,95vw)] h-[min(700px,90vh)]",
             "flex flex-col",
             "bg-background rounded-2xl border border-border",
             "shadow-modal overflow-hidden",
             "animate-in fade-in-0 zoom-in-95 duration-300"
           )}
         >
-          {/* Sticky Header */}
+          {/* Header */}
           <div className="shrink-0 flex items-start justify-between px-8 py-6 border-b border-border bg-card/50">
             <div className="space-y-1.5">
               <h2 className="text-xl font-semibold text-foreground">
@@ -324,7 +176,7 @@ export function PromptRefineModal({
             </div>
             <div className="flex items-center gap-4">
               {refineType && (
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
                   <Sparkles className="h-3.5 w-3.5" />
                   {refineType.label}
                 </span>
@@ -335,11 +187,11 @@ export function PromptRefineModal({
             </div>
           </div>
 
-          {/* Scrollable Body */}
-          <div className="flex-1 overflow-auto">
-            <div className="grid grid-cols-[1fr_1fr_280px] h-full">
-              {/* Original Panel */}
-              <div className="p-6 border-r border-border bg-muted/20">
+          {/* Three-Column Body */}
+          <div className="flex-1 overflow-hidden">
+            <div className="grid grid-cols-3 h-full divide-x divide-border">
+              {/* Column 1: Original */}
+              <div className="flex flex-col p-6 bg-muted/20">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -360,23 +212,21 @@ export function PromptRefineModal({
                     )}
                   </Button>
                 </div>
-                <div className="relative">
-                  <Textarea
-                    value={originalEditable}
-                    onChange={(e) => setOriginalEditable(e.target.value)}
-                    className={cn(
-                      "min-h-[380px] resize-none",
-                      "text-base leading-relaxed",
-                      "bg-muted/40 border-muted/60",
-                      "focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-border"
-                    )}
-                    placeholder="Your original prompt..."
-                  />
-                </div>
+                <Textarea
+                  value={originalEditable}
+                  onChange={(e) => setOriginalEditable(e.target.value)}
+                  className={cn(
+                    "flex-1 resize-none",
+                    "text-sm leading-relaxed",
+                    "bg-muted/40 border-muted/60",
+                    "focus-visible:ring-1 focus-visible:ring-ring focus-visible:border-border"
+                  )}
+                  placeholder="Your original prompt..."
+                />
               </div>
 
-              {/* Refined Panel */}
-              <div className="p-6 border-r border-border bg-background">
+              {/* Column 2: Refined */}
+              <div className="flex flex-col p-6 bg-background">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <span className="text-xs font-semibold text-foreground uppercase tracking-wider">
@@ -412,7 +262,7 @@ export function PromptRefineModal({
                 </div>
 
                 {isRefining ? (
-                  <div className="min-h-[380px] p-4 rounded-lg border border-border bg-muted/10">
+                  <div className="flex-1 p-4 rounded-lg border border-border bg-muted/10">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                       <RefreshCw className="h-4 w-4 animate-spin" />
                       <span>Refining your prompt...</span>
@@ -422,112 +272,82 @@ export function PromptRefineModal({
                       <div className="h-4 bg-muted/50 rounded animate-pulse w-[90%]" />
                       <div className="h-4 bg-muted/50 rounded animate-pulse w-[75%]" />
                       <div className="h-4 bg-muted/50 rounded animate-pulse w-[85%]" />
-                      <div className="h-4 bg-muted/50 rounded animate-pulse w-[60%]" />
                     </div>
                   </div>
                 ) : (
-                  <div className="relative">
-                    <Textarea
-                      value={refinedPrompt}
-                      onChange={(e) => setRefinedPrompt(e.target.value)}
-                      className={cn(
-                        "min-h-[380px] resize-none",
-                        "text-base leading-relaxed",
-                        "bg-background border-border",
-                        "focus-visible:ring-1 focus-visible:ring-ring",
-                        showDifferences && "bg-emerald-50/30 dark:bg-emerald-950/10"
-                      )}
-                      placeholder="Your refined prompt will appear here..."
-                    />
-                  </div>
-                )}
-
-                {/* Improvements indicator */}
-                {!isRefining && refinedPrompt !== originalPrompt && (
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
-                      <span className="text-sm text-muted-foreground">
-                        Trojan suggested improvements
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowDifferences(!showDifferences)}
-                      className={cn(
-                        "h-7 px-2 text-xs gap-1.5",
-                        showDifferences && "bg-accent/10 text-accent"
-                      )}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      {showDifferences ? "Hide differences" : "View differences"}
-                    </Button>
-                  </div>
+                  <Textarea
+                    value={refinedPrompt}
+                    onChange={(e) => setRefinedPrompt(e.target.value)}
+                    className={cn(
+                      "flex-1 resize-none",
+                      "text-sm leading-relaxed",
+                      "bg-primary/5 border-primary/20",
+                      "focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary/40"
+                    )}
+                    placeholder="Your refined prompt will appear here..."
+                  />
                 )}
               </div>
 
-              {/* Changes Panel */}
-              <div className="p-6 bg-muted/10">
+              {/* Column 3: What Changed */}
+              <div className="flex flex-col p-6 bg-muted/10">
                 <div className="mb-4">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    What Changed
+                    What changed
                   </span>
                 </div>
-                <div className="space-y-3">
-                  {changes.map((change, i) => (
-                    <div 
-                      key={i} 
-                      className="flex items-start gap-3 p-3 rounded-lg bg-background border border-border/50"
-                    >
-                      <div className="h-2 w-2 rounded-full bg-accent mt-1 shrink-0" />
-                      <span className="text-sm text-foreground leading-relaxed">
-                        {change}
-                      </span>
+                
+                <div className="flex-1 space-y-4">
+                  {isRefining ? (
+                    <div className="space-y-3">
+                      <div className="h-4 bg-muted/50 rounded animate-pulse w-3/4" />
+                      <div className="h-4 bg-muted/50 rounded animate-pulse w-2/3" />
+                      <div className="h-4 bg-muted/50 rounded animate-pulse w-4/5" />
                     </div>
-                  ))}
+                  ) : (
+                    <ul className="space-y-3">
+                      {changes.map((change, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                          <span className="text-sm text-foreground">{change}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
-                {/* Quick actions in changes panel */}
-                <div className="mt-6 pt-6 border-t border-border/50 space-y-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRefineAgain}
-                    disabled={isRefining}
-                    className="w-full justify-start text-muted-foreground hover:text-foreground"
-                  >
-                    <RefreshCw className={cn("h-4 w-4 mr-2", isRefining && "animate-spin")} />
-                    Refine again
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAskQuestions}
-                    disabled={isRefining}
-                    className="w-full justify-start text-muted-foreground hover:text-foreground"
-                  >
-                    <MessageCircleQuestion className="h-4 w-4 mr-2" />
-                    Ask clarifying questions
-                  </Button>
-                </div>
+                {/* Refine Again Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefineAgain}
+                  disabled={isRefining}
+                  className="mt-4"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5 mr-2", isRefining && "animate-spin")} />
+                  Refine again
+                </Button>
               </div>
             </div>
           </div>
 
-          {/* Sticky Footer */}
-          <div className="shrink-0 flex items-center justify-between px-8 py-5 border-t border-border bg-card/50">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="ask-questions"
-                  onCheckedChange={(checked) => checked && handleAskQuestions()}
-                />
-                <label htmlFor="ask-questions" className="text-sm text-muted-foreground cursor-pointer">
-                  Ask clarifying questions instead
-                </label>
-              </div>
+          {/* Footer */}
+          <div className="shrink-0 flex items-center justify-between px-8 py-4 border-t border-border bg-card/50">
+            <div className="flex items-center gap-3">
+              <Switch
+                id="ask-questions"
+                checked={askQuestionsMode}
+                onCheckedChange={setAskQuestionsMode}
+              />
+              <label 
+                htmlFor="ask-questions" 
+                className="text-sm text-muted-foreground cursor-pointer flex items-center gap-2"
+              >
+                <MessageCircleQuestion className="h-4 w-4" />
+                Ask clarifying questions instead
+              </label>
             </div>
+
             <div className="flex items-center gap-3">
               <Button variant="ghost" onClick={onClose}>
                 Cancel
@@ -537,15 +357,14 @@ export function PromptRefineModal({
                 onClick={() => onReplace(refinedPrompt)}
                 disabled={isRefining || !refinedPrompt.trim()}
               >
-                <Replace className="h-4 w-4 mr-2" />
                 Apply
               </Button>
               <Button
                 onClick={() => onReplaceAndSend(refinedPrompt)}
                 disabled={isRefining || !refinedPrompt.trim()}
-                className="px-6"
+                className="gap-2"
               >
-                <Send className="h-4 w-4 mr-2" />
+                <Send className="h-4 w-4" />
                 Replace & Send
               </Button>
             </div>
