@@ -1,10 +1,39 @@
 import { useState, useCallback } from "react";
-import { Copy, ThumbsUp, ThumbsDown, Bookmark, Check, Sparkles, Pin, GitBranch, RefreshCw, Pencil, Trash2 } from "lucide-react";
+import { 
+  Copy, 
+  ThumbsUp, 
+  ThumbsDown, 
+  Bookmark, 
+  Check, 
+  Sparkles, 
+  Pin, 
+  GitBranch, 
+  RefreshCw, 
+  Pencil, 
+  Trash2,
+  Minimize2,
+  FileText,
+  ListChecks,
+  Mail,
+  MoreHorizontal,
+  Palette,
+  Users,
+  MessageCircleQuestion,
+  HelpCircle,
+  GitCompare,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { ResponseTransformToolbar, TransformBadge, type TransformType } from "./ResponseTransformToolbar";
+import { TransformBadge, type TransformType } from "./ResponseTransformToolbar";
 import { ModeBadge, type ResponseMode } from "./ModeSelector";
 
 export interface Message {
@@ -194,49 +223,187 @@ export function ChatMessage({
           {message.timestamp}
         </span>
 
-        {/* Response Transform Toolbar (Assistant only, on hover or always for last message) */}
-        {!isUser && message.status === "complete" && (
-          <div className="mt-2">
-            <ResponseTransformToolbar
-              onTransform={handleTransform}
-              isTransforming={isTransforming}
-              currentTransform={currentTransform}
-              alwaysVisible={isLastAssistantMessage}
-            />
-          </div>
-        )}
-
-        {/* Message Actions */}
+        {/* Unified Action Toolbar */}
         {message.status === "complete" && (
           <div 
             className={cn(
-              "flex items-center gap-0.5 mt-2 p-1 rounded-lg bg-secondary/50 backdrop-blur-sm border border-border/50",
-              "opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0"
+              "flex items-center gap-0.5 mt-2 p-1 rounded-lg bg-background/95 backdrop-blur-sm border border-border/50 shadow-sm",
+              isLastAssistantMessage && !isUser
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0"
             )}
           >
             <TooltipProvider delayDuration={200}>
-              {/* Copy */}
+              {/* Transform Actions (Assistant only) */}
+              {!isUser && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                          currentTransform === "shorten" && "bg-muted text-foreground"
+                        )}
+                        onClick={() => handleTransform("shorten")}
+                        disabled={isTransforming}
+                      >
+                        <Minimize2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Shorten</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                          currentTransform === "summarize" && "bg-muted text-foreground"
+                        )}
+                        onClick={() => handleTransform("summarize")}
+                        disabled={isTransforming}
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Summarize</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                          currentTransform === "extract-actions" && "bg-muted text-foreground"
+                        )}
+                        onClick={() => handleTransform("extract-actions")}
+                        disabled={isTransforming}
+                      >
+                        <ListChecks className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Extract actions</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                          currentTransform === "email" && "bg-muted text-foreground"
+                        )}
+                        onClick={() => handleTransform("email")}
+                        disabled={isTransforming}
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Turn into email</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                          currentTransform === "rework" && "bg-muted text-foreground"
+                        )}
+                        onClick={() => handleTransform("rework")}
+                        disabled={isTransforming}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Rework</TooltipContent>
+                  </Tooltip>
+
+                  {/* More Transform Options */}
+                  <DropdownMenu>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            disabled={isTransforming}
+                          >
+                            <MoreHorizontal className="h-3.5 w-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">More transforms</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="start" className="w-56">
+                      <DropdownMenuItem onClick={() => handleTransform("change-tone")} className="flex items-start gap-3 p-2.5 cursor-pointer">
+                        <Palette className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium">Change tone</span>
+                          <span className="text-xs text-muted-foreground">Adjust formality or style</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleTransform("change-audience")} className="flex items-start gap-3 p-2.5 cursor-pointer">
+                        <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium">Change audience</span>
+                          <span className="text-xs text-muted-foreground">Adapt for different readers</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleTransform("follow-up")} className="flex items-start gap-3 p-2.5 cursor-pointer">
+                        <MessageCircleQuestion className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium">Ask follow-up</span>
+                          <span className="text-xs text-muted-foreground">Get clarification</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleTransform("explain-assumptions")} className="flex items-start gap-3 p-2.5 cursor-pointer">
+                        <HelpCircle className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium">Explain assumptions</span>
+                          <span className="text-xs text-muted-foreground">Surface underlying logic</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleTransform("compare-alternatives")} className="flex items-start gap-3 p-2.5 cursor-pointer">
+                        <GitCompare className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm font-medium">Compare alternatives</span>
+                          <span className="text-xs text-muted-foreground">Show other approaches</span>
+                        </div>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Divider */}
+                  <div className="h-4 w-px bg-border mx-0.5" />
+                </>
+              )}
+
+              {/* Utility Actions */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-background"
+                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     onClick={handleCopy}
                   >
-                    {copied ? (
-                      <Check className="h-3.5 w-3.5 text-green-500" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
+                    {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  {copied ? "Copied!" : "Copy"}
-                </TooltipContent>
+                <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
               </Tooltip>
 
-              {/* Pin */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -244,18 +411,14 @@ export function ChatMessage({
                     size="icon"
                     className={cn(
                       "h-7 w-7 rounded-md",
-                      isPinned
-                        ? "text-accent hover:text-accent/80"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background"
+                      isPinned ? "text-accent hover:text-accent/80" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                     onClick={handlePin}
                   >
                     <Pin className={cn("h-3.5 w-3.5", isPinned && "fill-current")} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  {isPinned ? "Unpin" : "Pin message"}
-                </TooltipContent>
+                <TooltipContent side="bottom" className="text-xs">{isPinned ? "Unpin" : "Pin"}</TooltipContent>
               </Tooltip>
 
               {/* Branch (assistant only) */}
@@ -265,34 +428,30 @@ export function ChatMessage({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-background"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       onClick={handleBranch}
                     >
                       <GitBranch className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Branch conversation
-                  </TooltipContent>
+                  <TooltipContent side="bottom" className="text-xs">Branch</TooltipContent>
                 </Tooltip>
               )}
 
-              {/* Regenerate (last assistant message only) */}
+              {/* Regenerate (last assistant only) */}
               {!isUser && isLastAssistantMessage && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-background"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       onClick={handleRegenerate}
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Regenerate response
-                  </TooltipContent>
+                  <TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent>
                 </Tooltip>
               )}
 
@@ -303,15 +462,13 @@ export function ChatMessage({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-background"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       onClick={handleEdit}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Edit message
-                  </TooltipContent>
+                  <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
                 </Tooltip>
               )}
 
@@ -328,77 +485,64 @@ export function ChatMessage({
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Delete message
-                  </TooltipContent>
+                  <TooltipContent side="bottom" className="text-xs">Delete</TooltipContent>
                 </Tooltip>
               )}
 
-              {/* Thumbs Up (assistant only) */}
+              {/* Feedback Section (assistant only) */}
               {!isUser && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-7 w-7 rounded-md",
-                        reaction === "up"
-                          ? "text-green-500 hover:text-green-600 bg-green-500/10"
-                          : "text-muted-foreground hover:text-foreground hover:bg-background"
-                      )}
-                      onClick={() => handleReaction("up")}
-                    >
-                      <ThumbsUp className={cn("h-3.5 w-3.5", reaction === "up" && "fill-current")} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Good response
-                  </TooltipContent>
-                </Tooltip>
-              )}
+                <>
+                  {/* Divider */}
+                  <div className="h-4 w-px bg-border mx-0.5" />
 
-              {/* Thumbs Down (assistant only) */}
-              {!isUser && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-7 w-7 rounded-md",
-                        reaction === "down"
-                          ? "text-destructive hover:text-destructive/80 bg-destructive/10"
-                          : "text-muted-foreground hover:text-foreground hover:bg-background"
-                      )}
-                      onClick={() => handleReaction("down")}
-                    >
-                      <ThumbsDown className={cn("h-3.5 w-3.5", reaction === "down" && "fill-current")} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Bad response
-                  </TooltipContent>
-                </Tooltip>
-              )}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 rounded-md",
+                          reaction === "up" ? "text-green-500 hover:text-green-600 bg-green-500/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                        onClick={() => handleReaction("up")}
+                      >
+                        <ThumbsUp className={cn("h-3.5 w-3.5", reaction === "up" && "fill-current")} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Good</TooltipContent>
+                  </Tooltip>
 
-              {/* Save as Artifact (assistant only) */}
-              {!isUser && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-background"
-                      onClick={handleSaveArtifact}
-                    >
-                      <Bookmark className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
-                    Save as artifact
-                  </TooltipContent>
-                </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7 rounded-md",
+                          reaction === "down" ? "text-destructive hover:text-destructive/80 bg-destructive/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                        onClick={() => handleReaction("down")}
+                      >
+                        <ThumbsDown className={cn("h-3.5 w-3.5", reaction === "down" && "fill-current")} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Bad</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        onClick={handleSaveArtifact}
+                      >
+                        <Bookmark className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="text-xs">Save</TooltipContent>
+                  </Tooltip>
+                </>
               )}
             </TooltipProvider>
           </div>
