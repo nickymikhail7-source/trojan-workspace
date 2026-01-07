@@ -443,47 +443,57 @@ export default function BranchView() {
       <div className="flex flex-1 flex-col overflow-hidden">
 
         <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Enhanced Branch Header */}
-          <div className="border-b border-border bg-card/50 px-4 py-2 shrink-0 flex items-center gap-3">
-            <button
-              onClick={() => navigate("/")}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Home</span>
-            </button>
-            <div className="h-4 w-px bg-border" />
-            
-            {/* Workspace Name */}
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                <Sparkles className="h-3 w-3 text-primary" />
+          {/* Breadcrumb Header */}
+          <div className="border-b border-border bg-card/50 px-4 py-3 shrink-0">
+            <div className="flex items-center gap-2 text-sm">
+              {/* Home Link */}
+              <button
+                onClick={() => navigate("/")}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Home
+              </button>
+              
+              <span className="text-muted-foreground/50">/</span>
+              
+              {/* Workspace Name (editable) */}
+              <div className="flex items-center gap-1.5">
+                <div className="h-5 w-5 rounded bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="h-3 w-3 text-primary" />
+                </div>
+                {isEditingName ? (
+                  <Input
+                    value={workspaceName}
+                    onChange={(e) => setWorkspaceName(e.target.value)}
+                    onBlur={handleNameSave}
+                    onKeyDown={(e) => e.key === "Enter" && handleNameSave()}
+                    className="h-6 text-sm w-48 px-2"
+                    autoFocus
+                  />
+                ) : (
+                  <button
+                    onClick={() => setIsEditingName(true)}
+                    className="flex items-center gap-1.5 group font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    <span className="truncate max-w-[180px]">{workspaceName}</span>
+                    <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </button>
+                )}
               </div>
               
-              {isEditingName ? (
-                <Input
-                  value={workspaceName}
-                  onChange={(e) => setWorkspaceName(e.target.value)}
-                  onBlur={handleNameSave}
-                  onKeyDown={(e) => e.key === "Enter" && handleNameSave()}
-                  className="h-7 text-sm w-64"
-                  autoFocus
-                />
-              ) : (
-                <button
-                  onClick={() => setIsEditingName(true)}
-                  className="flex items-center gap-2 group"
-                >
-                  <span className="text-sm font-medium text-foreground truncate max-w-[200px]">
-                    {workspaceName}
-                  </span>
-                  <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </button>
-              )}
+              <span className="text-muted-foreground/50">/</span>
               
-              <span className="text-xs text-muted-foreground">
-                / {branches.find(b => b.id === branchId)?.name || "Main"}
+              {/* Current Branch */}
+              <span className="font-medium text-foreground">
+                {branches.find(b => b.id === branchId)?.name || "Main"}
               </span>
+              
+              {/* Branch indicator */}
+              {branches.length > 1 && (
+                <span className="ml-1 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                  {branches.length} branches
+                </span>
+              )}
             </div>
           </div>
 
