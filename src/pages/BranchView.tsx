@@ -482,12 +482,17 @@ export default function BranchView() {
                   ) : (
                     <button
                       onClick={() => navigate(`/workspace/${workspaceId}/branch/main`)}
-                      className="flex items-center gap-1.5 group font-medium text-foreground hover:text-primary transition-colors"
+                      className="font-medium text-foreground hover:text-primary transition-colors truncate max-w-[180px]"
                     >
-                      <span className="truncate max-w-[180px]">{workspaceName}</span>
-                      <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {workspaceName}
                     </button>
                   )}
+                  <button
+                    onClick={() => setIsEditingName(true)}
+                    className="h-5 w-5 rounded hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </button>
                 </div>
                 
                 <span className="text-muted-foreground/50">/</span>
