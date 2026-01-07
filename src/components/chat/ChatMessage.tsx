@@ -1,39 +1,18 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { 
   Copy, 
   ThumbsUp, 
   ThumbsDown, 
-  Bookmark, 
   Check, 
   Sparkles, 
   Pin, 
   GitBranch, 
   RefreshCw, 
-  Pencil, 
-  Trash2,
-  Minimize2,
-  FileText,
-  ListChecks,
-  Mail,
-  MoreHorizontal,
-  Palette,
-  Users,
-  MessageCircleQuestion,
-  HelpCircle,
-  GitCompare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { TransformBadge, type TransformType } from "./ResponseTransformToolbar";
 import { ModeBadge, type ResponseMode } from "./ModeSelector";
 
 export interface Message {
@@ -51,9 +30,6 @@ interface ChatMessageProps {
   onPin?: (messageId: string) => void;
   onBranch?: (messageId: string) => void;
   onRegenerate?: (messageId: string) => void;
-  onEdit?: (messageId: string) => void;
-  onDelete?: (messageId: string) => void;
-  onTransform?: (messageId: string, type: TransformType) => void;
   isLastAssistantMessage?: boolean;
 }
 
@@ -62,18 +38,12 @@ export function ChatMessage({
   onPin, 
   onBranch, 
   onRegenerate, 
-  onEdit, 
-  onDelete, 
-  onTransform,
   isLastAssistantMessage 
 }: ChatMessageProps) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [reaction, setReaction] = useState<"up" | "down" | null>(null);
   const [isPinned, setIsPinned] = useState(message.isPinned || false);
-  const [isTransforming, setIsTransforming] = useState(false);
-  const [currentTransform, setCurrentTransform] = useState<TransformType | null>(null);
-  const [showTransformBadge, setShowTransformBadge] = useState(false);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -84,13 +54,6 @@ export function ChatMessage({
 
   const handleReaction = (type: "up" | "down") => {
     setReaction(reaction === type ? null : type);
-  };
-
-  const handleSaveArtifact = () => {
-    toast({
-      title: "Saved as artifact",
-      description: "This response has been saved to your artifacts.",
-    });
   };
 
   const handlePin = () => {
@@ -112,29 +75,6 @@ export function ChatMessage({
   const handleRegenerate = () => {
     onRegenerate?.(message.id);
   };
-
-  const handleEdit = () => {
-    onEdit?.(message.id);
-  };
-
-  const handleDelete = () => {
-    onDelete?.(message.id);
-  };
-
-  const handleTransform = useCallback((type: TransformType) => {
-    setIsTransforming(true);
-    setCurrentTransform(type);
-    
-    // Simulate transformation
-    setTimeout(() => {
-      setIsTransforming(false);
-      setShowTransformBadge(true);
-      onTransform?.(message.id, type);
-      
-      // Hide badge after 3 seconds
-      setTimeout(() => setShowTransformBadge(false), 3000);
-    }, 800);
-  }, [message.id, onTransform]);
 
   const isUser = message.role === "user";
 
@@ -169,11 +109,6 @@ export function ChatMessage({
           </div>
         )}
 
-        {/* Transform Badge */}
-        {!isUser && (
-          <TransformBadge type={currentTransform} visible={showTransformBadge} />
-        )}
-
         {/* Message Bubble */}
         <div
           className={cn(
@@ -182,23 +117,12 @@ export function ChatMessage({
               ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
               : "bg-card border border-border/80 text-foreground shadow-card hover:shadow-lg hover:border-border",
             isPinned && !isUser && "ring-2 ring-accent/30 border-accent/40",
-            message.status === "streaming" && !isUser && "streaming-glow",
-            isTransforming && "opacity-70"
+            message.status === "streaming" && !isUser && "streaming-glow"
           )}
         >
           {/* Subtle glow for user messages */}
           {isUser && (
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-          )}
-          
-          {/* Loading overlay for transforms */}
-          {isTransforming && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-2xl">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                <span>Transforming...</span>
-              </div>
-            </div>
           )}
           
           <div className="relative text-sm whitespace-pre-wrap leading-relaxed">
@@ -223,7 +147,7 @@ export function ChatMessage({
           {message.timestamp}
         </span>
 
-        {/* Unified Action Toolbar */}
+        {/* Action Toolbar */}
         {message.status === "complete" && (
           <div 
             className={cn(
@@ -234,162 +158,7 @@ export function ChatMessage({
             )}
           >
             <TooltipProvider delayDuration={200}>
-              {/* Transform Actions (Assistant only) */}
-              {!isUser && (
-                <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                          currentTransform === "shorten" && "bg-muted text-foreground"
-                        )}
-                        onClick={() => handleTransform("shorten")}
-                        disabled={isTransforming}
-                      >
-                        <Minimize2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Shorten</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                          currentTransform === "summarize" && "bg-muted text-foreground"
-                        )}
-                        onClick={() => handleTransform("summarize")}
-                        disabled={isTransforming}
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Summarize</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                          currentTransform === "extract-actions" && "bg-muted text-foreground"
-                        )}
-                        onClick={() => handleTransform("extract-actions")}
-                        disabled={isTransforming}
-                      >
-                        <ListChecks className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Extract actions</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                          currentTransform === "email" && "bg-muted text-foreground"
-                        )}
-                        onClick={() => handleTransform("email")}
-                        disabled={isTransforming}
-                      >
-                        <Mail className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Turn into email</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                          currentTransform === "rework" && "bg-muted text-foreground"
-                        )}
-                        onClick={() => handleTransform("rework")}
-                        disabled={isTransforming}
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Rework</TooltipContent>
-                  </Tooltip>
-
-                  {/* More Transform Options */}
-                  <DropdownMenu>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                            disabled={isTransforming}
-                          >
-                            <MoreHorizontal className="h-3.5 w-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="text-xs">More transforms</TooltipContent>
-                    </Tooltip>
-                    <DropdownMenuContent align="start" className="w-56">
-                      <DropdownMenuItem onClick={() => handleTransform("change-tone")} className="flex items-start gap-3 p-2.5 cursor-pointer">
-                        <Palette className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium">Change tone</span>
-                          <span className="text-xs text-muted-foreground">Adjust formality or style</span>
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleTransform("change-audience")} className="flex items-start gap-3 p-2.5 cursor-pointer">
-                        <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium">Change audience</span>
-                          <span className="text-xs text-muted-foreground">Adapt for different readers</span>
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleTransform("follow-up")} className="flex items-start gap-3 p-2.5 cursor-pointer">
-                        <MessageCircleQuestion className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium">Ask follow-up</span>
-                          <span className="text-xs text-muted-foreground">Get clarification</span>
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleTransform("explain-assumptions")} className="flex items-start gap-3 p-2.5 cursor-pointer">
-                        <HelpCircle className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium">Explain assumptions</span>
-                          <span className="text-xs text-muted-foreground">Surface underlying logic</span>
-                        </div>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleTransform("compare-alternatives")} className="flex items-start gap-3 p-2.5 cursor-pointer">
-                        <GitCompare className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium">Compare alternatives</span>
-                          <span className="text-xs text-muted-foreground">Show other approaches</span>
-                        </div>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Divider */}
-                  <div className="h-4 w-px bg-border mx-0.5" />
-                </>
-              )}
-
-              {/* Utility Actions */}
+              {/* Copy */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -404,6 +173,7 @@ export function ChatMessage({
                 <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
               </Tooltip>
 
+              {/* Pin */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -438,8 +208,8 @@ export function ChatMessage({
                 </Tooltip>
               )}
 
-              {/* Regenerate (last assistant only) */}
-              {!isUser && isLastAssistantMessage && (
+              {/* Regenerate (assistant only) */}
+              {!isUser && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -452,40 +222,6 @@ export function ChatMessage({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent>
-                </Tooltip>
-              )}
-
-              {/* Edit (user only) */}
-              {isUser && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      onClick={handleEdit}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
-                </Tooltip>
-              )}
-
-              {/* Delete (user only) */}
-              {isUser && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      onClick={handleDelete}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">Delete</TooltipContent>
                 </Tooltip>
               )}
 
@@ -527,20 +263,6 @@ export function ChatMessage({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="text-xs">Bad</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        onClick={handleSaveArtifact}
-                      >
-                        <Bookmark className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Save</TooltipContent>
                   </Tooltip>
                 </>
               )}
