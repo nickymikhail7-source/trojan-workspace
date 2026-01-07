@@ -169,42 +169,21 @@ export function ChatMessage({
                 <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
               </Tooltip>
 
-              {/* User messages: Pin + Edit */}
+              {/* User messages: Edit only */}
               {isUser && (
-                <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7 rounded-md",
-                          message.isPinned 
-                            ? "text-primary hover:text-primary/80 bg-primary/10" 
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        )}
-                        onClick={handlePin}
-                      >
-                        <Pin className={cn("h-3.5 w-3.5", message.isPinned && "fill-current")} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">{message.isPinned ? "Unpin" : "Pin"}</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        onClick={handleEdit}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
-                  </Tooltip>
-                </>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      onClick={handleEdit}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
+                </Tooltip>
               )}
 
               {/* Branch (assistant only) */}
@@ -221,6 +200,28 @@ export function ChatMessage({
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">Branch</TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Pin (assistant only) */}
+              {!isUser && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        "h-7 w-7 rounded-md",
+                        message.isPinned 
+                          ? "text-primary hover:text-primary/80 bg-primary/10" 
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      )}
+                      onClick={handlePin}
+                    >
+                      <Pin className={cn("h-3.5 w-3.5", message.isPinned && "fill-current")} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">{message.isPinned ? "Unpin" : "Pin"}</TooltipContent>
                 </Tooltip>
               )}
 
