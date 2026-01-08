@@ -13,8 +13,10 @@ import {
   UserCircle,
   HelpCircle,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Moon
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import { TrojanLogo } from "./TrojanLogo";
@@ -55,6 +57,11 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
     return stored ? JSON.parse(stored) : true;
   });
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const stored = localStorage.getItem("trojan-dark-mode");
+    if (stored !== null) return JSON.parse(stored);
+    return document.documentElement.classList.contains("dark");
+  });
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,6 +69,15 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
   useEffect(() => {
     localStorage.setItem("trojan-sidebar-expanded", JSON.stringify(isExpanded));
   }, [isExpanded]);
+
+  useEffect(() => {
+    localStorage.setItem("trojan-dark-mode", JSON.stringify(isDarkMode));
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
 
   const getActiveItem = () => {
     const path = location.pathname;
@@ -231,6 +247,16 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
               </div>
 
               <div className="border-t border-border py-2">
+                <div className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-foreground">
+                  <div className="flex items-center gap-3">
+                    <Moon className="h-4 w-4" />
+                    <span>Dark mode</span>
+                  </div>
+                  <Switch 
+                    checked={isDarkMode} 
+                    onCheckedChange={setIsDarkMode}
+                  />
+                </div>
                 <button className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-foreground hover:bg-secondary/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <HelpCircle className="h-4 w-4" />
