@@ -60,7 +60,8 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const stored = localStorage.getItem("trojan-dark-mode");
     if (stored !== null) return JSON.parse(stored);
-    return document.documentElement.classList.contains("dark");
+    // Detect system preference
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
   
   const navigate = useNavigate();
