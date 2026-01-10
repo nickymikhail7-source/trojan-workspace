@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { FolderKanban, Search, MoreVertical, Pencil, Trash2, GitBranch } from "lucide-react";
 import { CollapsibleLeftRail } from "@/components/CollapsibleLeftRail";
 import { NewWorkspaceModal } from "@/components/NewWorkspaceModal";
+import { RenameWorkspaceModal } from "@/components/RenameWorkspaceModal";
 import { EmptyState } from "@/components/EmptyState";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +71,8 @@ const STORAGE_KEY = "trojan-workspaces";
 
 export default function Workspaces() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [workspaceToRename, setWorkspaceToRename] = useState<Workspace | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const navigate = useNavigate();
@@ -121,9 +124,34 @@ export default function Workspaces() {
   };
 
   const handleRenameWorkspace = (workspace: Workspace) => {
+    setWorkspaceToRename(workspace);
+    setIsRenameModalOpen(true);
+  };
+
+  const handleRenameConfirm = (newName: string) => {
+    if (!workspaceToRename) return;
+    
+    // Update state
+    setWorkspaces(prev => prev.map(w => 
+      w.id === workspaceToRename.id ? { ...w, title: newName } : w
+    ));
+    
+    // Update localStorage
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const existing = JSON.parse(saved);
+      const updated = existing.map((w: Workspace) => 
+        w.id === workspaceToRename.id ? { ...w, title: newName } : w
+      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
+    
+    setIsRenameModalOpen(false);
+    setWorkspaceToRename(null);
+    
     toast({
-      title: "Rename workspace",
-      description: `Renaming "${workspace.title}"...`,
+      title: "Workspace renamed",
+      description: `Renamed to "${newName}"`,
     });
   };
 
@@ -272,6 +300,16 @@ export default function Workspaces() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateWorkspace}
+      />
+
+      <RenameWorkspaceModal
+        isOpen={isRenameModalOpen}
+        currentName={workspaceToRename?.title || ""}
+        onClose={() => {
+          setIsRenameModalOpen(false);
+          setWorkspaceToRename(null);
+        }}
+        onRename={handleRenameConfirm}
       />
     </div>
   );
