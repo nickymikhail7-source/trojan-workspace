@@ -680,7 +680,7 @@ export default function BranchView() {
                 
                 {showThinking && (
                   <div className="pt-2">
-                    <ThinkingIndicator />
+                    <ThinkingIndicator workMode={workMode} />
                   </div>
                 )}
                 

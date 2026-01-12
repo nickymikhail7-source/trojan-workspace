@@ -1,45 +1,67 @@
 import { useState, useEffect } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Zap, Brain, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { WorkMode } from "./WorkModeSelector";
 
-type ThinkingPhase = "thinking" | "analyzing" | "preparing";
+type ThinkingPhase = "initial" | "processing" | "finalizing";
 
 interface ThinkingIndicatorProps {
   className?: string;
+  workMode?: WorkMode;
 }
 
-const phaseConfig = {
-  thinking: {
-    text: "Thinking",
-    duration: 1500,
+// Mode-specific phase configurations
+const modePhaseConfig: Record<WorkMode, Record<ThinkingPhase, { text: string; duration: number }>> = {
+  quick: {
+    initial: { text: "Processing", duration: 800 },
+    processing: { text: "Almost there", duration: 600 },
+    finalizing: { text: "Ready", duration: 0 },
   },
-  analyzing: {
-    text: "Analyzing",
-    duration: 2000,
+  think: {
+    initial: { text: "Thinking deeply", duration: 1500 },
+    processing: { text: "Analyzing", duration: 2000 },
+    finalizing: { text: "Preparing response", duration: 0 },
   },
-  preparing: {
-    text: "Preparing response",
-    duration: 0,
+  research: {
+    initial: { text: "Researching", duration: 1800 },
+    processing: { text: "Gathering insights", duration: 2200 },
+    finalizing: { text: "Synthesizing", duration: 0 },
+  },
+  create: {
+    initial: { text: "Creating", duration: 1500 },
+    processing: { text: "Crafting", duration: 1800 },
+    finalizing: { text: "Polishing", duration: 0 },
   },
 };
 
-export function ThinkingIndicator({ className }: ThinkingIndicatorProps) {
-  const [phase, setPhase] = useState<ThinkingPhase>("thinking");
+// Mode-specific icons
+const modeIcons: Record<WorkMode, React.ReactNode> = {
+  quick: <Zap className="h-4 w-4 text-primary animate-pulse" />,
+  think: <Brain className="h-4 w-4 text-primary animate-pulse" />,
+  research: <Search className="h-4 w-4 text-primary animate-pulse" />,
+  create: <Sparkles className="h-4 w-4 text-primary animate-pulse" />,
+};
+
+export function ThinkingIndicator({ className, workMode = "think" }: ThinkingIndicatorProps) {
+  const [phase, setPhase] = useState<ThinkingPhase>("initial");
+  const config = modePhaseConfig[workMode];
 
   useEffect(() => {
+    setPhase("initial");
+    
     const timer1 = setTimeout(() => {
-      setPhase("analyzing");
-    }, phaseConfig.thinking.duration);
+      setPhase("processing");
+    }, config.initial.duration);
 
     const timer2 = setTimeout(() => {
-      setPhase("preparing");
-    }, phaseConfig.thinking.duration + phaseConfig.analyzing.duration);
+      setPhase("finalizing");
+    }, config.initial.duration + config.processing.duration);
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
-  }, []);
+  }, [workMode, config]);
 
   return (
     <div className={cn("flex items-center gap-4 animate-fade-in", className)}>
@@ -53,7 +75,7 @@ export function ThinkingIndicator({ className }: ThinkingIndicatorProps) {
         
         {/* Main avatar */}
         <div className="relative h-9 w-9 rounded-xl bg-gradient-to-br from-accent/20 via-primary/15 to-primary/5 flex items-center justify-center ring-1 ring-primary/20 shadow-lg shadow-accent/10">
-          <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+          {modeIcons[workMode]}
         </div>
         
         {/* Status indicator */}
@@ -69,7 +91,7 @@ export function ThinkingIndicator({ className }: ThinkingIndicatorProps) {
           {/* Content */}
           <div className="relative flex items-center gap-3">
             <span className="text-sm text-muted-foreground font-medium">
-              {phaseConfig[phase].text}
+              {config[phase].text}
             </span>
             
             {/* Animated dots */}
