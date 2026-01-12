@@ -9,11 +9,11 @@ import {
   Settings, 
   PanelLeftClose,
   PanelLeft,
-  Sparkles,
   UserCircle,
   HelpCircle,
   LogOut,
   ChevronRight,
+  ChevronDown,
   Moon
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -26,6 +26,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 type NavItem = {
   icon: React.ComponentType<{ className?: string }>;
@@ -35,16 +40,17 @@ type NavItem = {
   action?: "new-workspace";
 };
 
-const mainNavItems: NavItem[] = [
+// Primary navigation - always visible
+const primaryNavItems: NavItem[] = [
   { icon: Home, label: "Home", id: "home", path: "/" },
-  { icon: FolderKanban, label: "Workspaces", id: "workspaces", path: "/workspaces" },
   { icon: Clock, label: "Recent", id: "recent", path: "/recent" },
-  { icon: LayoutTemplate, label: "Templates", id: "templates", path: "/templates" },
-  { icon: Library, label: "Library", id: "library", path: "/library" },
 ];
 
-const actionItems: NavItem[] = [
-  { icon: Plus, label: "New Workspace", id: "new", action: "new-workspace" },
+// Secondary navigation - inside collapsible "Organize" section
+const organizeNavItems: NavItem[] = [
+  { icon: FolderKanban, label: "Workspaces", id: "workspaces", path: "/workspaces" },
+  { icon: Library, label: "Library", id: "library", path: "/library" },
+  { icon: LayoutTemplate, label: "Templates", id: "templates", path: "/templates" },
 ];
 
 interface CollapsibleLeftRailProps {
@@ -56,11 +62,14 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
     const stored = localStorage.getItem("trojan-sidebar-expanded");
     return stored ? JSON.parse(stored) : true;
   });
+  const [isOrganizeOpen, setIsOrganizeOpen] = useState(() => {
+    const stored = localStorage.getItem("trojan-organize-open");
+    return stored ? JSON.parse(stored) : false;
+  });
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const stored = localStorage.getItem("trojan-dark-mode");
     if (stored !== null) return JSON.parse(stored);
-    // Detect system preference
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
   
@@ -70,6 +79,10 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
   useEffect(() => {
     localStorage.setItem("trojan-sidebar-expanded", JSON.stringify(isExpanded));
   }, [isExpanded]);
+
+  useEffect(() => {
+    localStorage.setItem("trojan-organize-open", JSON.stringify(isOrganizeOpen));
+  }, [isOrganizeOpen]);
 
   useEffect(() => {
     localStorage.setItem("trojan-dark-mode", JSON.stringify(isDarkMode));
@@ -100,27 +113,34 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
     }
   };
 
-  const NavButton = ({ item }: { item: NavItem }) => {
+  const NavButton = ({ item, isSecondary = false }: { item: NavItem; isSecondary?: boolean }) => {
     const isActive = activeItem === item.id;
     const Icon = item.icon;
-    const isNewWorkspace = item.action === "new-workspace";
 
     const button = (
       <button
         onClick={() => handleItemClick(item)}
         className={cn(
-          "w-full flex items-center gap-3 rounded-lg transition-all duration-150",
-          isExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center",
-          isNewWorkspace
-            ? "bg-accent text-accent-foreground hover:bg-accent/90"
-            : isActive 
-              ? "bg-secondary/80 text-foreground" 
-              : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+          "w-full flex items-center gap-3 rounded-lg transition-all duration-150 relative",
+          isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center",
+          isSecondary && isExpanded && "pl-6",
+          isActive 
+            ? "bg-accent/10 text-foreground" 
+            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
         )}
       >
-        <Icon className="h-5 w-5 shrink-0" />
+        {/* Active indicator bar */}
+        {isActive && (
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-primary rounded-full" />
+        )}
+        <Icon className={cn("h-4 w-4 shrink-0", isActive && "text-foreground")} />
         {isExpanded && (
-          <span className="text-sm font-medium truncate">{item.label}</span>
+          <span className={cn(
+            "text-sm truncate",
+            isActive ? "font-medium" : "font-normal"
+          )}>
+            {item.label}
+          </span>
         )}
       </button>
     );
@@ -133,6 +153,39 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
             {item.label}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return button;
+  };
+
+  const ActionButton = () => {
+    const button = (
+      <button
+        onClick={() => onNewWorkspace?.()}
+        className={cn(
+          "w-full flex items-center gap-3 rounded-lg transition-all duration-150",
+          isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center",
+          "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+        )}
+      >
+        <Plus className="h-4 w-4 shrink-0" />
+        {isExpanded && (
+          <span className="text-sm font-normal">New Workspace</span>
+        )}
+      </button>
+    );
+
+    if (!isExpanded) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            {button}
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            New Workspace
           </TooltipContent>
         </Tooltip>
       );
@@ -158,7 +211,7 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
             <TooltipTrigger asChild>
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
               >
                 {isExpanded ? (
                   <PanelLeftClose className="h-5 w-5" />
@@ -173,16 +226,49 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
           </Tooltip>
         </div>
 
-        {/* Main Nav */}
-        <div className={cn("flex-1 py-3 space-y-1", isExpanded ? "px-3" : "px-2")}>
-          {mainNavItems.map((item) => (
-            <NavButton key={item.id} item={item} />
-          ))}
-          
-          <div className="pt-2">
-            {actionItems.map((item) => (
+        {/* Main Navigation */}
+        <div className={cn("flex-1 py-4 flex flex-col", isExpanded ? "px-3" : "px-2")}>
+          {/* Primary Nav - Always Visible */}
+          <div className="space-y-1">
+            {primaryNavItems.map((item) => (
               <NavButton key={item.id} item={item} />
             ))}
+          </div>
+          
+          {/* Organize Section - Collapsible */}
+          <div className="mt-6">
+            {isExpanded ? (
+              <Collapsible open={isOrganizeOpen} onOpenChange={setIsOrganizeOpen}>
+                <CollapsibleTrigger className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+                  {isOrganizeOpen ? (
+                    <ChevronDown className="h-3 w-3" />
+                  ) : (
+                    <ChevronRight className="h-3 w-3" />
+                  )}
+                  <span>Organize</span>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1 mt-1">
+                  {organizeNavItems.map((item) => (
+                    <NavButton key={item.id} item={item} isSecondary />
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+            ) : (
+              // When collapsed, show organize items as regular items with separator
+              <div className="space-y-1 pt-2 border-t border-border/50">
+                {organizeNavItems.map((item) => (
+                  <NavButton key={item.id} item={item} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* New Workspace - Secondary Action */}
+          <div className="pt-4 border-t border-border/50">
+            <ActionButton />
           </div>
         </div>
 
@@ -192,17 +278,17 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
             <PopoverTrigger asChild>
               <button
                 className={cn(
-                  "w-full flex items-center gap-3 rounded-lg transition-all duration-150 text-foreground hover:bg-secondary/50",
-                  isExpanded ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
+                  "w-full flex items-center gap-3 rounded-lg transition-all duration-150 text-foreground hover:bg-muted/50",
+                  isExpanded ? "px-3 py-2" : "px-0 py-2 justify-center"
                 )}
               >
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground font-medium text-sm">
+                <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 text-muted-foreground font-medium text-xs">
                   N
                 </div>
                 {isExpanded && (
                   <div className="flex-1 text-left min-w-0">
                     <div className="text-sm font-medium truncate">Nikhil Devlapur</div>
-                    <div className="text-xs text-muted-foreground">Plus</div>
+                    <div className="text-xs text-muted-foreground">Free Plan</div>
                   </div>
                 )}
               </button>
@@ -210,47 +296,33 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
             <PopoverContent 
               side={isExpanded ? "top" : "right"} 
               align="start"
-              className="w-64 p-0 bg-popover border-border shadow-lg"
+              className="w-56 p-0 bg-popover border-border shadow-lg"
             >
-              {/* User Info Header */}
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium">
-                    ND
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground">Nikhil Devlapur</div>
-                    <div className="text-xs text-muted-foreground">@devlapurnikhil</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Menu Items */}
+              {/* Simplified Menu Items */}
               <div className="py-2">
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/50 transition-colors">
-                  <Sparkles className="h-4 w-4" />
-                  <span>Upgrade plan</span>
-                </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/50 transition-colors">
-                  <UserCircle className="h-4 w-4" />
-                  <span>Personalization</span>
-                </button>
                 <button 
                   onClick={() => {
                     setIsUserMenuOpen(false);
                     navigate("/settings");
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/50 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-4 w-4 text-muted-foreground" />
                   <span>Settings</span>
+                </button>
+                <button 
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <UserCircle className="h-4 w-4 text-muted-foreground" />
+                  <span>Personalization</span>
                 </button>
               </div>
 
               <div className="border-t border-border py-2">
-                <div className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-foreground">
+                <div className="w-full flex items-center justify-between px-4 py-2 text-sm text-foreground">
                   <div className="flex items-center gap-3">
-                    <Moon className="h-4 w-4" />
+                    <Moon className="h-4 w-4 text-muted-foreground" />
                     <span>Dark mode</span>
                   </div>
                   <Switch 
@@ -258,15 +330,21 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
                     onCheckedChange={setIsDarkMode}
                   />
                 </div>
-                <button className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-foreground hover:bg-secondary/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <HelpCircle className="h-4 w-4" />
-                    <span>Help</span>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </div>
+
+              <div className="border-t border-border py-2">
+                <button 
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                  <span>Help</span>
                 </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-secondary/50 transition-colors">
-                  <LogOut className="h-4 w-4" />
+                <button 
+                  onClick={() => setIsUserMenuOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  <LogOut className="h-4 w-4 text-muted-foreground" />
                   <span>Log out</span>
                 </button>
               </div>
