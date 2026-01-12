@@ -6,4 +6,5 @@ export { PromptRefineDropdown } from "./PromptRefineDropdown";
 export { PromptRefineModal } from "./PromptRefineModal";
 export { ResponseTransformToolbar, TransformBadge, type TransformType } from "./ResponseTransformToolbar";
 export { ModeSelector, ModeBadge, type ResponseMode } from "./ModeSelector";
+export { WorkModeSelector, WorkModeBadge, type WorkMode } from "./WorkModeSelector";
 export { ChatSidebar, type Branch } from "./ChatSidebar";

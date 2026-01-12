@@ -13,8 +13,10 @@ import {
   ThinkingIndicator,
   type Message,
   type ChatComposerRef,
+  type WorkMode,
 } from "@/components/chat";
 import { WorkspaceSidebar, type Branch, type ContextFile } from "@/components/workspace/WorkspaceSidebar";
+import { getPendingPrompt, clearPendingPrompt } from "@/lib/pendingPrompt";
 
 // Sample workspace names for existing workspaces
 const existingWorkspaceNames: Record<string, string> = {
@@ -38,7 +40,21 @@ export default function BranchView() {
   const composerRef = useRef<ChatComposerRef>(null);
 
   const isNewWorkspace = workspaceId?.startsWith("new-");
-  const initialPrompt = searchParams.get("prompt");
+
+  // WorkMode state - loaded from branch metadata
+  const [workMode, setWorkMode] = useState<WorkMode>(() => {
+    const metaKey = `branch-metadata-${workspaceId}-${branchId}`;
+    try {
+      const saved = localStorage.getItem(metaKey);
+      if (saved) {
+        const meta = JSON.parse(saved);
+        return meta.workMode || "think";
+      }
+    } catch {
+      // ignore
+    }
+    return "think";
+  });
 
   const [workspaceName, setWorkspaceName] = useState(() => {
     // Check localStorage for saved workspaces first
@@ -129,36 +145,27 @@ export default function BranchView() {
     }
   }, [branches, workspaceId]);
 
-  // If we arrived here from Home with ?prompt=..., seed the conversation once
+  // If we arrived here from Home with pending prompt, seed the conversation once
   useEffect(() => {
     if (!workspaceId || !branchId) return;
-    if (!initialPrompt?.trim()) return;
-
-    const promptKey = `${workspaceId}:${branchId}:${initialPrompt}`;
-    if (consumedInitialPromptRef.current.has(promptKey)) return;
-
-    const storageKey = `trojan-messages-${workspaceId}-${branchId}`;
-    const hasSavedMessages = (() => {
-      try {
-        const saved = localStorage.getItem(storageKey);
-        const parsed = saved ? (JSON.parse(saved) as Message[]) : [];
-        return parsed.length > 0;
-      } catch {
-        return false;
+    
+    // Check for new pending prompt system first
+    const pendingPrompt = getPendingPrompt();
+    if (pendingPrompt) {
+      const promptKey = `${workspaceId}:${branchId}:${pendingPrompt.content}`;
+      if (consumedInitialPromptRef.current.has(promptKey)) {
+        clearPendingPrompt();
+        return;
       }
-    })();
-
-    // Always remove prompt from URL to prevent loops
-    const clearPrompt = () => {
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete("prompt");
-      navigate(`/workspace/${workspaceId}/branch/${branchId}`, { replace: true });
-    };
-
-    consumedInitialPromptRef.current.add(promptKey);
-
-    if (!hasSavedMessages) {
-      // Ensure workspace exists in localStorage so it appears in the Workspaces list
+      
+      consumedInitialPromptRef.current.add(promptKey);
+      
+      // Save workMode to branch metadata
+      const metaKey = `branch-metadata-${workspaceId}-${branchId}`;
+      localStorage.setItem(metaKey, JSON.stringify({ workMode: pendingPrompt.meta.workMode }));
+      setWorkMode(pendingPrompt.meta.workMode);
+      
+      // Ensure workspace exists in localStorage
       try {
         const savedWorkspaces = JSON.parse(localStorage.getItem("trojan-workspaces") || "[]");
         const exists = savedWorkspaces.some((w: any) => w.id === workspaceId);
@@ -175,12 +182,65 @@ export default function BranchView() {
       } catch {
         // ignore
       }
-
-      handleSendMessage(initialPrompt.trim());
+      
+      handleSendMessage(pendingPrompt.content, pendingPrompt.meta.workMode);
+      clearPendingPrompt();
+      return;
     }
-
-    clearPrompt();
-  }, [workspaceId, branchId, initialPrompt, navigate, searchParams]);
+    
+    // Backward compatibility: check for URL-based prompt
+    const urlPrompt = searchParams.get("prompt");
+    if (urlPrompt?.trim()) {
+      const promptKey = `${workspaceId}:${branchId}:${urlPrompt}`;
+      if (consumedInitialPromptRef.current.has(promptKey)) {
+        // Clear URL param
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete("prompt");
+        navigate(`/workspace/${workspaceId}/branch/${branchId}`, { replace: true });
+        return;
+      }
+      
+      consumedInitialPromptRef.current.add(promptKey);
+      
+      const storageKey = `trojan-messages-${workspaceId}-${branchId}`;
+      const hasSavedMessages = (() => {
+        try {
+          const saved = localStorage.getItem(storageKey);
+          const parsed = saved ? (JSON.parse(saved) as Message[]) : [];
+          return parsed.length > 0;
+        } catch {
+          return false;
+        }
+      })();
+      
+      if (!hasSavedMessages) {
+        // Ensure workspace exists in localStorage
+        try {
+          const savedWorkspaces = JSON.parse(localStorage.getItem("trojan-workspaces") || "[]");
+          const exists = savedWorkspaces.some((w: any) => w.id === workspaceId);
+          if (!exists) {
+            const newWorkspace = {
+              id: workspaceId,
+              title: "Untitled Workspace",
+              lastActive: "Just now",
+              branchCount: 1,
+              tags: [],
+            };
+            localStorage.setItem("trojan-workspaces", JSON.stringify([newWorkspace, ...savedWorkspaces]));
+          }
+        } catch {
+          // ignore
+        }
+        
+        handleSendMessage(urlPrompt.trim());
+      }
+      
+      // Clear URL param
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete("prompt");
+      navigate(`/workspace/${workspaceId}/branch/${branchId}`, { replace: true });
+    }
+  }, [workspaceId, branchId, navigate, searchParams]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
