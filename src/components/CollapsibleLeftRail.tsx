@@ -4,12 +4,11 @@ import {
   FolderKanban, 
   Clock, 
   LayoutTemplate, 
-  Library, 
+  Bookmark, 
   Plus, 
   Settings, 
   PanelLeftClose,
   PanelLeft,
-  UserCircle,
   HelpCircle,
   LogOut,
   ChevronRight,
@@ -37,7 +36,7 @@ type NavItem = {
   label: string;
   id: string;
   path?: string;
-  action?: "new-workspace";
+  action?: "new-project";
 };
 
 // Primary navigation - always visible
@@ -48,9 +47,15 @@ const primaryNavItems: NavItem[] = [
 
 // Secondary navigation - inside collapsible "Organize" section
 const organizeNavItems: NavItem[] = [
-  { icon: FolderKanban, label: "Workspaces", id: "workspaces", path: "/workspaces" },
-  { icon: Library, label: "Library", id: "library", path: "/library" },
+  { icon: FolderKanban, label: "Projects", id: "projects", path: "/workspaces" },
+  { icon: Bookmark, label: "Saved", id: "saved", path: "/library" },
   { icon: LayoutTemplate, label: "Templates", id: "templates", path: "/templates" },
+];
+
+// Utility navigation - Help & Settings
+const utilityNavItems: NavItem[] = [
+  { icon: HelpCircle, label: "Help", id: "help" },
+  { icon: Settings, label: "Settings", id: "settings", path: "/settings" },
 ];
 
 interface CollapsibleLeftRailProps {
@@ -96,17 +101,18 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
   const getActiveItem = () => {
     const path = location.pathname;
     if (path === "/") return "home";
-    if (path.startsWith("/workspace")) return "workspaces";
+    if (path.startsWith("/workspace")) return "projects";
     if (path === "/recent") return "recent";
     if (path === "/templates") return "templates";
-    if (path === "/library") return "library";
+    if (path === "/library") return "saved";
+    if (path === "/settings") return "settings";
     return "home";
   };
 
   const activeItem = getActiveItem();
 
   const handleItemClick = (item: NavItem) => {
-    if (item.action === "new-workspace") {
+    if (item.action === "new-project") {
       onNewWorkspace?.();
     } else if (item.path) {
       navigate(item.path);
@@ -173,7 +179,7 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
       >
         <Plus className="h-4 w-4 shrink-0" />
         {isExpanded && (
-          <span className="text-sm font-normal">New Workspace</span>
+          <span className="text-sm font-normal">New Project</span>
         )}
       </button>
     );
@@ -185,7 +191,7 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
             {button}
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={8}>
-            New Workspace
+            New Project
           </TooltipContent>
         </Tooltip>
       );
@@ -266,9 +272,16 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* New Workspace - Secondary Action */}
+          {/* New Project - Secondary Action */}
           <div className="pt-4 border-t border-border/50">
             <ActionButton />
+          </div>
+
+          {/* Utility Section - Help & Settings */}
+          <div className="pt-4 space-y-1">
+            {utilityNavItems.map((item) => (
+              <NavButton key={item.id} item={item} />
+            ))}
           </div>
         </div>
 
@@ -298,28 +311,8 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
               align="start"
               className="w-56 p-0 bg-popover border-border shadow-lg"
             >
-              {/* Simplified Menu Items */}
+              {/* Simplified Menu - Dark Mode & Logout Only */}
               <div className="py-2">
-                <button 
-                  onClick={() => {
-                    setIsUserMenuOpen(false);
-                    navigate("/settings");
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
-                >
-                  <Settings className="h-4 w-4 text-muted-foreground" />
-                  <span>Settings</span>
-                </button>
-                <button 
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
-                >
-                  <UserCircle className="h-4 w-4 text-muted-foreground" />
-                  <span>Personalization</span>
-                </button>
-              </div>
-
-              <div className="border-t border-border py-2">
                 <div className="w-full flex items-center justify-between px-4 py-2 text-sm text-foreground">
                   <div className="flex items-center gap-3">
                     <Moon className="h-4 w-4 text-muted-foreground" />
@@ -333,13 +326,6 @@ export function CollapsibleLeftRail({ onNewWorkspace }: CollapsibleLeftRailProps
               </div>
 
               <div className="border-t border-border py-2">
-                <button 
-                  onClick={() => setIsUserMenuOpen(false)}
-                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
-                >
-                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                  <span>Help</span>
-                </button>
                 <button 
                   onClick={() => setIsUserMenuOpen(false)}
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
