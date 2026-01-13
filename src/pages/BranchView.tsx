@@ -12,6 +12,7 @@ import {
   ChatEmptyState,
   ThinkingIndicator,
   type Message,
+  type MessageAttachment,
   type ChatComposerRef,
   type WorkMode,
 } from "@/components/chat";
@@ -183,7 +184,15 @@ export default function BranchView() {
         // ignore
       }
       
-      handleSendMessage(pendingPrompt.content, pendingPrompt.meta.workMode);
+      // Convert pending attachments to message attachments
+      const messageAttachments: MessageAttachment[] | undefined = pendingPrompt.meta.attachments?.map(att => ({
+        id: att.id,
+        type: att.type,
+        name: att.name,
+        preview: att.preview,
+      }));
+      
+      handleSendMessage(pendingPrompt.content, pendingPrompt.meta.workMode, messageAttachments);
       clearPendingPrompt();
       return;
     }
@@ -312,7 +321,7 @@ export default function BranchView() {
     });
   };
 
-  const handleSendMessage = (value?: string, mode?: string) => {
+  const handleSendMessage = (value?: string, mode?: string, attachments?: MessageAttachment[]) => {
     const messageContent = value || inputValue;
     if (!messageContent.trim() || isStreaming) return;
 
@@ -322,6 +331,7 @@ export default function BranchView() {
       content: messageContent.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       status: "complete",
+      attachments: attachments,
     };
 
     setMessages((prev) => [...prev, userMessage]);

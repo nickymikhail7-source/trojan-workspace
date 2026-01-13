@@ -9,12 +9,22 @@ import {
   GitBranch, 
   RefreshCw,
   Pin,
+  Paperclip,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { ModeBadge, type ResponseMode } from "./ModeSelector";
+
+export interface MessageAttachment {
+  id: string;
+  type: 'file' | 'image' | 'link';
+  name: string;
+  preview?: string;
+}
 
 export interface Message {
   id: string;
@@ -24,6 +34,7 @@ export interface Message {
   status: "sending" | "streaming" | "complete" | "error";
   isPinned?: boolean;
   responseMode?: ResponseMode;
+  attachments?: MessageAttachment[];
 }
 
 interface ChatMessageProps {
@@ -119,6 +130,51 @@ export function ChatMessage({
           {/* Subtle glow for user messages */}
           {isUser && (
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+          )}
+
+          {/* Attachments Display */}
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {message.attachments.map((att) => (
+                <div key={att.id} className="flex items-center gap-1.5">
+                  {att.type === 'image' && att.preview ? (
+                    <img 
+                      src={att.preview} 
+                      alt={att.name} 
+                      className="max-h-32 rounded-lg object-cover border border-white/20"
+                    />
+                  ) : att.type === 'link' ? (
+                    <a 
+                      href={att.preview} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className={cn(
+                        "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors",
+                        isUser 
+                          ? "bg-white/20 hover:bg-white/30 text-primary-foreground" 
+                          : "bg-secondary hover:bg-secondary/80 text-muted-foreground"
+                      )}
+                    >
+                      <Globe className="h-3 w-3" />
+                      <span className="max-w-[100px] truncate">{att.name}</span>
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                  ) : (
+                    <div 
+                      className={cn(
+                        "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs",
+                        isUser 
+                          ? "bg-white/20 text-primary-foreground" 
+                          : "bg-secondary text-muted-foreground"
+                      )}
+                    >
+                      <Paperclip className="h-3 w-3" />
+                      <span className="max-w-[100px] truncate">{att.name}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
           
           <div className="relative text-sm whitespace-pre-wrap leading-relaxed">

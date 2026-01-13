@@ -1,4 +1,4 @@
-export { ChatMessage, type Message } from "./ChatMessage";
+export { ChatMessage, type Message, type MessageAttachment } from "./ChatMessage";
 export { ChatComposer, type ChatComposerRef } from "./ChatComposer";
 export { ChatEmptyState } from "./ChatEmptyState";
 export { ThinkingIndicator, StreamingCursor, MessageSkeleton } from "./ThinkingIndicator";
