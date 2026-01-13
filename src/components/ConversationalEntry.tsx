@@ -1,9 +1,21 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Target, Bug, PenTool, FileText, ArrowUp } from "lucide-react";
+import { Target, Bug, PenTool, FileText, ArrowUp, Plus, Paperclip, ImagePlus, Link, X, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WorkModeSelector, type WorkMode } from "./chat/WorkModeSelector";
 import { setPendingPrompt } from "@/lib/pendingPrompt";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+interface Attachment {
+  id: string;
+  type: 'file' | 'image' | 'link';
+  name: string;
+  preview?: string;
+}
 
 const quickActions = [
   {
@@ -39,11 +51,42 @@ const placeholderMap: Record<WorkMode, string> = {
   create: "What would you like to create?",
 };
 
+const attachmentOptions = [
+  {
+    id: "file",
+    icon: Paperclip,
+    label: "Upload file",
+    helper: "PDFs, documents, or text files",
+    accept: ".pdf,.doc,.docx,.txt,.md,.csv,.json",
+  },
+  {
+    id: "image",
+    icon: ImagePlus,
+    label: "Upload image",
+    helper: "Screenshots, photos, or diagrams",
+    accept: "image/*",
+  },
+  {
+    id: "link",
+    icon: Link,
+    label: "Paste link",
+    helper: "Add a URL for reference",
+  },
+];
+
 export function ConversationalEntry() {
   const [inputValue, setInputValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [workMode, setWorkMode] = useState<WorkMode>("think");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isAddingLink, setIsAddingLink] = useState(false);
+  const [linkValue, setLinkValue] = useState("");
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const linkInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   // Auto-resize textarea
@@ -54,6 +97,13 @@ export function ConversationalEntry() {
     }
   }, [inputValue]);
 
+  // Focus link input when adding link
+  useEffect(() => {
+    if (isAddingLink && linkInputRef.current) {
+      linkInputRef.current.focus();
+    }
+  }, [isAddingLink]);
+
   const handleCreateWorkspace = (prompt: string) => {
     const newId = `new-${Date.now()}`;
     
@@ -63,6 +113,7 @@ export function ConversationalEntry() {
       meta: {
         workMode,
         timestamp: Date.now(),
+        attachments: attachments.length > 0 ? attachments : undefined,
       },
     });
     
@@ -76,12 +127,90 @@ export function ConversationalEntry() {
   const handleSubmit = () => {
     if (!inputValue.trim()) return;
     handleCreateWorkspace(inputValue.trim());
+    setAttachments([]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'file' | 'image') => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: Attachment[] = Array.from(files).map((file) => ({
+      id: `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type,
+      name: file.name,
+      preview: type === 'image' ? URL.createObjectURL(file) : undefined,
+    }));
+
+    setAttachments((prev) => [...prev, ...newAttachments]);
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleAddLink = () => {
+    if (!linkValue.trim()) {
+      setIsAddingLink(false);
+      return;
+    }
+
+    // Simple URL validation
+    let url = linkValue.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+
+    try {
+      new URL(url);
+      const hostname = new URL(url).hostname;
+      
+      setAttachments((prev) => [
+        ...prev,
+        {
+          id: `link-${Date.now()}`,
+          type: 'link',
+          name: hostname,
+          preview: url,
+        },
+      ]);
+      setLinkValue("");
+      setIsAddingLink(false);
+    } catch {
+      // Invalid URL, just close
+      setLinkValue("");
+      setIsAddingLink(false);
+    }
+  };
+
+  const handleLinkKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddLink();
+    } else if (e.key === "Escape") {
+      setLinkValue("");
+      setIsAddingLink(false);
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((att) => att.id !== id));
+  };
+
+  const handleOptionClick = (optionId: string) => {
+    setIsPopoverOpen(false);
+    
+    if (optionId === 'file') {
+      fileInputRef.current?.click();
+    } else if (optionId === 'image') {
+      imageInputRef.current?.click();
+    } else if (optionId === 'link') {
+      setIsAddingLink(true);
     }
   };
 
@@ -112,6 +241,57 @@ export function ConversationalEntry() {
               isFocused && "opacity-100"
             )} 
           />
+
+          {/* Attachment Chips */}
+          {(attachments.length > 0 || isAddingLink) && (
+            <div className="relative px-4 pt-3 pb-1 flex flex-wrap gap-1.5">
+              {attachments.map((att) => (
+                <div
+                  key={att.id}
+                  className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-2 py-1 text-xs text-muted-foreground group"
+                >
+                  {att.type === 'image' && att.preview && (
+                    <img 
+                      src={att.preview} 
+                      alt={att.name}
+                      className="h-4 w-4 rounded object-cover" 
+                    />
+                  )}
+                  {att.type === 'link' && (
+                    <Globe className="h-3 w-3" />
+                  )}
+                  {att.type === 'file' && (
+                    <Paperclip className="h-3 w-3" />
+                  )}
+                  <span className="max-w-[120px] truncate">{att.name}</span>
+                  <button
+                    onClick={() => removeAttachment(att.id)}
+                    className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-secondary transition-colors"
+                    aria-label={`Remove ${att.name}`}
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              ))}
+              
+              {/* Inline Link Input */}
+              {isAddingLink && (
+                <div className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-2 py-1">
+                  <Globe className="h-3 w-3 text-muted-foreground" />
+                  <input
+                    ref={linkInputRef}
+                    type="text"
+                    value={linkValue}
+                    onChange={(e) => setLinkValue(e.target.value)}
+                    onKeyDown={handleLinkKeyDown}
+                    onBlur={handleAddLink}
+                    placeholder="Paste URL..."
+                    className="bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none w-[140px]"
+                  />
+                </div>
+              )}
+            </div>
+          )}
           
           {/* Input Row */}
           <div className="relative p-4 pb-2">
@@ -135,8 +315,53 @@ export function ConversationalEntry() {
 
           {/* Simplified Toolbar Row */}
           <div className="relative flex items-center justify-between px-3 py-2 border-t border-border/30">
-            {/* Left Side: WorkMode Selector */}
-            <WorkModeSelector value={workMode} onChange={setWorkMode} />
+            {/* Left Side: Add Button + WorkMode Selector */}
+            <div className="flex items-center gap-1">
+              {/* + Attachment Button */}
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    className={cn(
+                      "h-8 w-8 rounded-lg flex items-center justify-center",
+                      "text-muted-foreground hover:text-foreground hover:bg-secondary/80",
+                      "transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    )}
+                    aria-label="Add attachment"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  align="start" 
+                  className="w-56 p-2"
+                  sideOffset={8}
+                >
+                  <div className="space-y-0.5">
+                    {attachmentOptions.map((option) => {
+                      const Icon = option.icon;
+                      return (
+                        <button
+                          key={option.id}
+                          onClick={() => handleOptionClick(option.id)}
+                          className={cn(
+                            "w-full flex items-start gap-3 p-2.5 rounded-md",
+                            "hover:bg-muted/50 transition-colors text-left"
+                          )}
+                        >
+                          <Icon className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                          <div>
+                            <div className="text-sm font-medium text-foreground">{option.label}</div>
+                            <div className="text-xs text-muted-foreground">{option.helper}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <WorkModeSelector value={workMode} onChange={setWorkMode} />
+            </div>
 
             {/* Right Side: Send Button */}
             <button
@@ -154,6 +379,24 @@ export function ConversationalEntry() {
             </button>
           </div>
         </div>
+
+        {/* Hidden File Inputs */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.txt,.md,.csv,.json"
+          onChange={(e) => handleFileChange(e, 'file')}
+          className="hidden"
+          multiple
+        />
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleFileChange(e, 'image')}
+          className="hidden"
+          multiple
+        />
 
         {/* Subtle Quick Actions */}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
