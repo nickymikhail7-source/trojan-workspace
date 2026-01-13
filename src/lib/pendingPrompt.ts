@@ -2,9 +2,17 @@ import type { WorkMode } from "@/components/chat/WorkModeSelector";
 
 const STORAGE_KEY = "trojan-pending-prompt";
 
+export interface PendingAttachment {
+  id: string;
+  type: 'file' | 'image' | 'link';
+  name: string;
+  preview?: string;
+}
+
 export interface PendingPromptMeta {
   workMode: WorkMode;
   timestamp: number;
+  attachments?: PendingAttachment[];
 }
 
 export interface PendingPrompt {
