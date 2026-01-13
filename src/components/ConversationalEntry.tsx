@@ -1,20 +1,23 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Target, Bug, PenTool, FileText, ArrowUp, Plus, Paperclip, ImagePlus, Link, X, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WorkModeSelector, type WorkMode } from "./chat/WorkModeSelector";
 import { setPendingPrompt } from "@/lib/pendingPrompt";
+import { AttachmentPreviewModal } from "./AttachmentPreviewModal";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-interface Attachment {
+export interface Attachment {
   id: string;
   type: 'file' | 'image' | 'link';
   name: string;
   preview?: string;
+  size?: number;
+  file?: File;
 }
 
 const quickActions = [
@@ -82,11 +85,14 @@ export function ConversationalEntry() {
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [linkValue, setLinkValue] = useState("");
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const linkInputRef = useRef<HTMLInputElement>(null);
+  const dropZoneRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Auto-resize textarea
@@ -137,22 +143,64 @@ export function ConversationalEntry() {
     }
   };
 
+  const processFiles = useCallback((files: FileList | File[], type?: 'file' | 'image') => {
+    const newAttachments: Attachment[] = Array.from(files).map((file) => {
+      const isImage = type === 'image' || file.type.startsWith('image/');
+      const attachmentType = isImage ? 'image' : 'file';
+      
+      return {
+        id: `${attachmentType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        type: attachmentType,
+        name: file.name,
+        preview: isImage ? URL.createObjectURL(file) : undefined,
+        size: file.size,
+        file,
+      };
+    });
+
+    setAttachments((prev) => [...prev, ...newAttachments]);
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'file' | 'image') => {
     const files = e.target.files;
     if (!files) return;
-
-    const newAttachments: Attachment[] = Array.from(files).map((file) => ({
-      id: `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      type,
-      name: file.name,
-      preview: type === 'image' ? URL.createObjectURL(file) : undefined,
-    }));
-
-    setAttachments((prev) => [...prev, ...newAttachments]);
-    
-    // Reset input
+    processFiles(files, type);
     e.target.value = '';
   };
+
+  // Drag and drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the drop zone entirely
+    if (!dropZoneRef.current?.contains(e.relatedTarget as Node)) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processFiles(files);
+    }
+  }, [processFiles]);
 
   const handleAddLink = () => {
     if (!linkValue.trim()) {
@@ -215,7 +263,10 @@ export function ConversationalEntry() {
   };
 
   return (
-    <div className="min-h-full flex flex-col items-center justify-center px-6 py-8">
+    <div 
+      className="min-h-full flex flex-col items-center justify-center px-6 py-8"
+      onDragEnter={handleDragEnter}
+    >
       <div className="w-full max-w-2xl animate-fade-up">
         {/* Heading */}
         <div className="text-center mb-8">
@@ -226,14 +277,31 @@ export function ConversationalEntry() {
 
         {/* Chatbox Container */}
         <div
+          ref={dropZoneRef}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
           className={cn(
             "relative rounded-2xl border backdrop-blur-sm transition-all duration-300 overflow-hidden",
             "bg-gradient-to-b from-card via-card to-secondary/20",
-            isFocused
-              ? "border-primary/40 shadow-xl shadow-primary/10 ring-2 ring-primary/20"
-              : "border-border/50 hover:border-border hover:shadow-lg hover:shadow-primary/5"
+            isDragging
+              ? "border-accent border-dashed shadow-xl shadow-accent/20 ring-2 ring-accent/30"
+              : isFocused
+                ? "border-primary/40 shadow-xl shadow-primary/10 ring-2 ring-primary/20"
+                : "border-border/50 hover:border-border hover:shadow-lg hover:shadow-primary/5"
           )}
         >
+          {/* Drag overlay */}
+          {isDragging && (
+            <div className="absolute inset-0 bg-accent/5 flex items-center justify-center z-10 pointer-events-none">
+              <div className="flex flex-col items-center gap-2 text-accent">
+                <Plus className="h-8 w-8" />
+                <span className="text-sm font-medium">Drop files here</span>
+              </div>
+            </div>
+          )}
+
           {/* Subtle gradient overlay */}
           <div 
             className={cn(
@@ -248,7 +316,8 @@ export function ConversationalEntry() {
               {attachments.map((att) => (
                 <div
                   key={att.id}
-                  className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-2 py-1 text-xs text-muted-foreground group"
+                  className="flex items-center gap-1.5 bg-secondary/60 rounded-lg px-2 py-1 text-xs text-muted-foreground group cursor-pointer hover:bg-secondary/80 transition-colors"
+                  onClick={() => setPreviewAttachment(att)}
                 >
                   {att.type === 'image' && att.preview && (
                     <img 
@@ -265,7 +334,10 @@ export function ConversationalEntry() {
                   )}
                   <span className="max-w-[120px] truncate">{att.name}</span>
                   <button
-                    onClick={() => removeAttachment(att.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeAttachment(att.id);
+                    }}
                     className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-secondary transition-colors"
                     aria-label={`Remove ${att.name}`}
                   >
@@ -419,6 +491,13 @@ export function ConversationalEntry() {
           })}
         </div>
       </div>
+
+      {/* Attachment Preview Modal */}
+      <AttachmentPreviewModal
+        attachment={previewAttachment}
+        isOpen={!!previewAttachment}
+        onClose={() => setPreviewAttachment(null)}
+      />
     </div>
   );
 }
