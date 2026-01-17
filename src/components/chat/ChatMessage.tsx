@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { ModeBadge, type ResponseMode } from "./ModeSelector";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 export interface MessageAttachment {
   id: string;
@@ -91,142 +92,77 @@ export function ChatMessage({
 
   const isUser = message.role === "user";
 
-  return (
-    <div
-      className={cn(
-        "flex gap-4 group animate-fade-in",
-        isUser ? "justify-end" : "justify-start"
-      )}
-    >
-      {/* Assistant Avatar */}
-      {!isUser && (
-        <div className="relative shrink-0 mt-1">
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-accent/20 via-primary/15 to-primary/5 flex items-center justify-center ring-1 ring-primary/10 shadow-sm">
-            <Sparkles className="h-4 w-4 text-primary" />
-          </div>
-          <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 ring-2 ring-background" />
-        </div>
-      )}
+  // User message render
+  if (isUser) {
+    return (
+      <div className="flex gap-4 group animate-fade-in justify-end">
+        <div className="flex flex-col max-w-[75%] items-end">
+          {/* User Message Bubble */}
+          <div className="relative rounded-xl px-4 py-3 bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-md">
+            {/* Subtle glow overlay */}
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
 
-      <div className={cn("flex flex-col max-w-[75%]", isUser ? "items-end" : "items-start")}>
-        {/* Mode badge for assistant messages */}
-        {!isUser && message.responseMode && message.responseMode !== "auto" && (
-          <ModeBadge mode={message.responseMode} className="mb-1" />
-        )}
-        
-
-        {/* Message Bubble */}
-        <div
-          className={cn(
-            "relative rounded-2xl px-4 py-3 transition-all duration-200",
-            isUser
-              ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-              : "bg-card border border-border/80 text-foreground shadow-card hover:shadow-lg hover:border-border",
+            {/* Attachments Display */}
+            {message.attachments && message.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {message.attachments.map((att) => (
+                  <div key={att.id} className="flex items-center gap-1.5">
+                    {att.type === 'image' && att.preview ? (
+                      <img 
+                        src={att.preview} 
+                        alt={att.name} 
+                        className="max-h-32 rounded-lg object-cover border border-white/20"
+                      />
+                    ) : att.type === 'link' ? (
+                      <a 
+                        href={att.preview} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors bg-white/20 hover:bg-white/30 text-primary-foreground"
+                      >
+                        <Globe className="h-3 w-3" />
+                        <span className="max-w-[100px] truncate">{att.name}</span>
+                        <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
+                    ) : (
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs bg-white/20 text-primary-foreground">
+                        <Paperclip className="h-3 w-3" />
+                        <span className="max-w-[100px] truncate">{att.name}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             
-            message.status === "streaming" && !isUser && "streaming-glow"
-          )}
-        >
-          
-          {/* Subtle glow for user messages */}
-          {isUser && (
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
-          )}
-
-          {/* Attachments Display */}
-          {message.attachments && message.attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {message.attachments.map((att) => (
-                <div key={att.id} className="flex items-center gap-1.5">
-                  {att.type === 'image' && att.preview ? (
-                    <img 
-                      src={att.preview} 
-                      alt={att.name} 
-                      className="max-h-32 rounded-lg object-cover border border-white/20"
-                    />
-                  ) : att.type === 'link' ? (
-                    <a 
-                      href={att.preview} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className={cn(
-                        "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors",
-                        isUser 
-                          ? "bg-white/20 hover:bg-white/30 text-primary-foreground" 
-                          : "bg-secondary hover:bg-secondary/80 text-muted-foreground"
-                      )}
-                    >
-                      <Globe className="h-3 w-3" />
-                      <span className="max-w-[100px] truncate">{att.name}</span>
-                      <ExternalLink className="h-2.5 w-2.5" />
-                    </a>
-                  ) : (
-                    <div 
-                      className={cn(
-                        "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs",
-                        isUser 
-                          ? "bg-white/20 text-primary-foreground" 
-                          : "bg-secondary text-muted-foreground"
-                      )}
-                    >
-                      <Paperclip className="h-3 w-3" />
-                      <span className="max-w-[100px] truncate">{att.name}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
+            <div className="relative text-sm whitespace-pre-wrap leading-relaxed">
+              {message.content}
             </div>
-          )}
-          
-          <div className="relative text-sm whitespace-pre-wrap leading-relaxed">
-            {message.status === "streaming" ? (
-              <>
-                <span className="animate-text-reveal">{message.content}</span>
-                <span className="inline-block w-0.5 h-4 bg-accent animate-blink ml-0.5 rounded-sm align-middle" />
-              </>
-            ) : (
-              message.content
-            )}
           </div>
-        </div>
 
-        {/* Timestamp */}
-        <span
-          className={cn(
-            "text-[10px] mt-1.5 px-1 font-medium tracking-wide",
-            isUser ? "text-muted-foreground/60" : "text-muted-foreground/70"
-          )}
-        >
-          {message.timestamp}
-        </span>
+          {/* Timestamp */}
+          <span className="text-[10px] mt-1.5 px-1 font-medium tracking-wide text-muted-foreground/60">
+            {message.timestamp}
+          </span>
 
-        {/* Action Toolbar */}
-        {message.status === "complete" && (
-          <div 
-            className={cn(
-              "flex items-center gap-0.5 mt-2 p-1 rounded-lg bg-background/95 backdrop-blur-sm border border-border/50 shadow-sm",
-              isLastAssistantMessage && !isUser
-                ? "opacity-100"
-                : "opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0"
-            )}
-          >
-            <TooltipProvider delayDuration={200}>
-              {/* Copy */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    onClick={handleCopy}
-                  >
-                    {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
-              </Tooltip>
+          {/* User Action Toolbar */}
+          {message.status === "complete" && (
+            <div className="flex items-center gap-0.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300">
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      onClick={handleCopy}
+                    >
+                      {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
+                </Tooltip>
 
-              {/* User messages: Edit only */}
-              {isUser && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -240,116 +176,175 @@ export function ChatMessage({
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="text-xs">Edit</TooltipContent>
                 </Tooltip>
-              )}
+              </TooltipProvider>
+            </div>
+          )}
+        </div>
 
-              {/* Branch (assistant only) */}
-              {!isUser && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      onClick={handleBranch}
-                    >
-                      <GitBranch className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">Branch</TooltipContent>
-                </Tooltip>
-              )}
+        {/* User Avatar */}
+        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-secondary to-muted flex items-center justify-center shrink-0 mt-1 ring-1 ring-border/50 shadow-sm">
+          <span className="text-xs font-semibold text-muted-foreground">You</span>
+        </div>
+      </div>
+    );
+  }
 
-              {/* Pin (assistant only) */}
-              {!isUser && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn(
-                        "h-7 w-7 rounded-md",
-                        message.isPinned 
-                          ? "text-primary hover:text-primary/80 bg-primary/10" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      )}
-                      onClick={handlePin}
-                    >
-                      <Pin className={cn("h-3.5 w-3.5", message.isPinned && "fill-current")} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">{message.isPinned ? "Unpin" : "Pin"}</TooltipContent>
-                </Tooltip>
-              )}
+  // Assistant message render - clean, no bubble
+  return (
+    <div className="flex gap-5 group animate-fade-in">
+      {/* Assistant Avatar */}
+      <div className="relative shrink-0">
+        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 via-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/25">
+          <Sparkles className="h-5 w-5 text-white" />
+        </div>
+        <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-background" />
+      </div>
 
-              {/* Regenerate (assistant only) */}
-              {!isUser && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      onClick={handleRegenerate}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent>
-                </Tooltip>
-              )}
+      <div className="flex-1 min-w-0 pt-1">
+        {/* Mode badge */}
+        {message.responseMode && message.responseMode !== "auto" && (
+          <ModeBadge mode={message.responseMode} className="mb-2" />
+        )}
 
-              {/* Feedback Section (assistant only) */}
-              {!isUser && (
-                <>
-                  {/* Divider */}
-                  <div className="h-4 w-px bg-border mx-0.5" />
+        {/* Content - Markdown rendered, no bubble */}
+        <div className={cn(
+          "text-foreground",
+          message.status === "streaming" && "streaming-content"
+        )}>
+          {message.status === "streaming" ? (
+            <div className="text-sm">
+              <MarkdownRenderer content={message.content} />
+              <span className="inline-block w-0.5 h-4 bg-primary animate-pulse ml-0.5 rounded-sm align-middle" />
+            </div>
+          ) : (
+            <MarkdownRenderer content={message.content} />
+          )}
+        </div>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7 rounded-md",
-                          reaction === "up" ? "text-green-500 hover:text-green-600 bg-green-500/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        )}
-                        onClick={() => handleReaction("up")}
-                      >
-                        <ThumbsUp className={cn("h-3.5 w-3.5", reaction === "up" && "fill-current")} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Good</TooltipContent>
-                  </Tooltip>
+        {/* Timestamp */}
+        <span className="text-[10px] mt-3 block font-medium tracking-wide text-muted-foreground/50">
+          {message.timestamp}
+        </span>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-7 w-7 rounded-md",
-                          reaction === "down" ? "text-destructive hover:text-destructive/80 bg-destructive/10" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        )}
-                        onClick={() => handleReaction("down")}
-                      >
-                        <ThumbsDown className={cn("h-3.5 w-3.5", reaction === "down" && "fill-current")} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="text-xs">Bad</TooltipContent>
-                  </Tooltip>
-                </>
-              )}
+        {/* Action Toolbar - hover only, minimal design */}
+        {message.status === "complete" && (
+          <div 
+            className={cn(
+              "flex items-center gap-1 mt-2 -ml-1",
+              isLastAssistantMessage
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            )}
+          >
+            <TooltipProvider delayDuration={200}>
+              {/* Copy */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    onClick={handleCopy}
+                  >
+                    {copied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">{copied ? "Copied!" : "Copy"}</TooltipContent>
+              </Tooltip>
+
+              {/* Thumbs Up */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8 rounded-lg",
+                      reaction === "up" 
+                        ? "text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    )}
+                    onClick={() => handleReaction("up")}
+                  >
+                    <ThumbsUp className={cn("h-4 w-4", reaction === "up" && "fill-current")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Good response</TooltipContent>
+              </Tooltip>
+
+              {/* Thumbs Down */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8 rounded-lg",
+                      reaction === "down" 
+                        ? "text-rose-500 bg-rose-500/10 hover:bg-rose-500/20" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    )}
+                    onClick={() => handleReaction("down")}
+                  >
+                    <ThumbsDown className={cn("h-4 w-4", reaction === "down" && "fill-current")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent>
+              </Tooltip>
+
+              {/* Regenerate */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    onClick={handleRegenerate}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent>
+              </Tooltip>
+
+              {/* Branch */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    onClick={handleBranch}
+                  >
+                    <GitBranch className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Branch conversation</TooltipContent>
+              </Tooltip>
+
+              {/* Pin */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8 rounded-lg",
+                      message.isPinned 
+                        ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500/20" 
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    )}
+                    onClick={handlePin}
+                  >
+                    <Pin className={cn("h-4 w-4", message.isPinned && "fill-current")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">{message.isPinned ? "Unpin" : "Pin to artifacts"}</TooltipContent>
+              </Tooltip>
             </TooltipProvider>
           </div>
         )}
       </div>
-
-      {/* User Avatar */}
-      {isUser && (
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-secondary to-muted flex items-center justify-center shrink-0 mt-1 ring-1 ring-border/50 shadow-sm">
-          <span className="text-xs font-semibold text-muted-foreground">You</span>
-        </div>
-      )}
     </div>
   );
 }
