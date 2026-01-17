@@ -8,3 +8,5 @@ export { ResponseTransformToolbar, TransformBadge, type TransformType } from "./
 export { ModeSelector, ModeBadge, type ResponseMode } from "./ModeSelector";
 export { WorkModeSelector, WorkModeBadge, type WorkMode } from "./WorkModeSelector";
 export { ChatSidebar, type Branch } from "./ChatSidebar";
+export { MarkdownRenderer } from "./MarkdownRenderer";
+export { CodeBlock } from "./CodeBlock";
